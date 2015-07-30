@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE QuasiQuotes, OverloadedStrings, UnicodeSyntax, CPP #-}
 
 module Data.Microformats2.ParserSpec (spec) where
 
@@ -9,7 +9,9 @@ import           Data.Time.Clock
 import           Data.Time.Calendar
 import           Data.Microformats2
 import           Data.Microformats2.Parser
+#if __GLASGOW_HASKELL__ < 709
 import           Control.Applicative
+#endif
 
 {-# ANN module ("HLint: ignore Redundant do"::String) #-}
 

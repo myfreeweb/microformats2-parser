@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings, CPP #-}
 
 module Data.Microformats2.Parser (
   module Data.Microformats2.Parser
@@ -9,7 +9,9 @@ module Data.Microformats2.Parser (
 , sinkDoc
 ) where
 
+#if __GLASGOW_HASKELL__ < 709
 import           Control.Applicative
+#endif
 import           Control.Monad
 import           Data.Microformats2
 import           Data.Microformats2.Parser.Internal

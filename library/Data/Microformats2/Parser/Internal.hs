@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE CPP, RankNTypes #-}
 
 module Data.Microformats2.Parser.Internal where
 
+#if __GLASGOW_HASKELL__ < 709
 import           Control.Applicative
+#endif
 import           Control.Monad (liftM)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -71,8 +73,8 @@ safeTagName = (`S.member` (S.fromList [ "a", "b", "abbr", "acronym", "br", "ul",
 
 sanitizeAttrs ∷ Element → Element
 sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe modify $ M.toList $ elementAttributes e }
-  where modify (Name name _ _, val) = sanitizeAttribute (name, val)
-        wrapName (name, val) = (Name name Nothing Nothing, val)
+  where modify (Name n _ _, val) = sanitizeAttribute (n, val)
+        wrapName (n, val) = (Name n Nothing Nothing, val)
 
 _InnerHtmlSanitized ∷ Prism' Node Text
 _InnerHtmlSanitized = prism' NodeContent $ \s → case s of
@@ -198,10 +200,11 @@ extractPropertyDt n e = catMaybes $ readISO <$> T.unpack <$> extractProperty Dt 
                                      , isoParse $ Just "%H:%M:%SZ"
                                      , isoParse $ Just "%H:%M:%S"
                                      , isoParse $ Just "%H:%M"
-                                     , parseTime defaultTimeLocale $ "%G-W%V-%u"
-                                     , parseTime defaultTimeLocale $ "%G-W%V"
+                                     , parseTimeD $ "%G-W%V-%u"
+                                     , parseTimeD $ "%G-W%V"
                                      , isoParse Nothing ]
-        isoParse = parseTime defaultTimeLocale . iso8601DateFormat
+        isoParse = parseTimeD . iso8601DateFormat
+        parseTimeD = parseTimeM True defaultTimeLocale 
 
 extractPropertyContent ∷ (Element → Maybe Text) → PropType → String → Element → [TL.Text]
 extractPropertyContent ex t n e = findProperty e (className t n) >>= extract [ ex ] >>= return . TL.fromStrict

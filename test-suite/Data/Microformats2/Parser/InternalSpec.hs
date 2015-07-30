@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, UnicodeSyntax, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings, UnicodeSyntax, QuasiQuotes, CPP #-}
 
 module Data.Microformats2.Parser.InternalSpec (spec) where
 
@@ -7,7 +7,9 @@ import           TestCommon
 import           Text.HTML.DOM
 import           Text.XML.Lens (documentRoot)
 import           Data.Microformats2.Parser.Internal
+#if __GLASGOW_HASKELL__ < 709
 import           Control.Applicative
+#endif
 
 {-# ANN module ("HLint: ignore Redundant do"::String) #-}
 
