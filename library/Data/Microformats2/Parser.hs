@@ -95,14 +95,14 @@ extractCard e = def { cardName              = extractPropertyL P "name" e
                     , cardAdr               = filter (/= AdrAdr def) $
                                                 (AdrAdr . extractAdr $ e) :
                                                      (TextAdr <$> extractPropertyL P "adr" e)
-                                                  ++ (map (AdrAdr . extractAdr) $ findPropertyMicroformat e "p-adr" "h-adr")
+                                                  ++ ((AdrAdr . extractAdr) <$> findPropertyMicroformat e "p-adr" "h-adr")
                     , cardTel               = extractPropertyL P "tel" e
                     , cardNote              = extractPropertyL P "note" e
                     , cardBday              = extractPropertyDt "bday" e
                     , cardKey               = extractPropertyL U "key" e
                     , cardOrg               = filter (/= CardCard def) $
                                                    (TextCard <$> extractPropertyL P "org" e)
-                                                ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-org" "h-card")
+                                                ++ ((CardCard . extractCard) <$> findPropertyMicroformat e "p-org" "h-card")
                     , cardJobTitle          = extractPropertyL P "job-title" e
                     , cardRole              = extractPropertyL P "role" e
                     , cardImpp              = extractPropertyL U "impp" e

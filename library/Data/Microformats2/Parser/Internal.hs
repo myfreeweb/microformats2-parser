@@ -39,16 +39,16 @@ hasClass ∷ String →  Traversal' Element Element
 hasClass n = attributeSatisfies "class" $ T.isInfixOf . T.pack $ n
 
 getOnlyChildren ∷ Element → [Element]
-getOnlyChildren e = if ((lengthOf plate e) == 1) then e ^.. plate else []
+getOnlyChildren e = if lengthOf plate e == 1 then e ^.. plate else []
 
 getOnlyChild ∷ Name → Element → Maybe Element
-getOnlyChild n e = if' ((lengthOf plate e) == 1) $ e ^? plate . el n
+getOnlyChild n e = if' (lengthOf plate e == 1) $ e ^? plate . el n
 
 getOnlyOfType ∷ Name → Element → Maybe Element
-getOnlyOfType n e = if' ((lengthOf (plate . el n) e) == 1) $ e ^? plate . el n
+getOnlyOfType n e = if' (lengthOf (plate . el n) e == 1) $ e ^? plate . el n
 
 els ∷ [Name] → Traversal' Element Element
-els ns f s = if (elementName s) `elem` ns then f s else pure s
+els ns f s = if elementName s `elem` ns then f s else pure s
 
 removeWhitespace ∷ Text → Text
 removeWhitespace = gsub [re|(\s+|&nbsp;)|] (" " ∷ String) -- lol vim |||||||
@@ -67,9 +67,9 @@ getAllHtml = getPrism _InnerHtml
 
 -- XXX: https://github.com/yesodweb/haskell-xss-sanitize/issues/11
 safeTagName ∷ Text → Bool
-safeTagName = (`S.member` (S.fromList [ "a", "b", "abbr", "acronym", "br", "ul", "li", "ol", "span", "strong", "em",
-                                        "i", "q", "img", "time", "strike", "kbd", "dl", "dt", "pre", "p", "blockquote",
-                                        "code", "cite", "figure", "figcaption", "big", "dfn" ]))
+safeTagName = (`S.member` S.fromList [ "a", "b", "abbr", "acronym", "br", "ul", "li", "ol", "span", "strong", "em",
+                                       "i", "q", "img", "time", "strike", "kbd", "dl", "dt", "pre", "p", "blockquote",
+                                       "code", "cite", "figure", "figcaption", "big", "dfn" ])
 
 sanitizeAttrs ∷ Element → Element
 sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe modify $ M.toList $ elementAttributes e }
@@ -127,7 +127,7 @@ getTimeInsDelDatetime ∷ Element → Maybe Text
 getTimeInsDelDatetime e = e ^. els ["time", "ins", "del"] . attribute "datetime"
 
 getOnlyChildImgAreaAlt ∷ Element → Maybe Text
-getOnlyChildImgAreaAlt e = (^. attribute "alt") =<< (asum $ getOnlyChild <$> [ "img", "area" ] <*> pure e)
+getOnlyChildImgAreaAlt e = (^. attribute "alt") =<< asum (getOnlyChild <$> [ "img", "area" ] <*> pure e)
 
 getOnlyChildAbbrTitle ∷ Element → Maybe Text
 getOnlyChildAbbrTitle e = (^. attribute "title") =<< getOnlyChild "abbr" e
@@ -139,7 +139,7 @@ getOnlyOfTypeObjectData ∷ Element → Maybe Text
 getOnlyOfTypeObjectData e = (^. attribute "data") =<< getOnlyOfType "object" e
 
 getOnlyOfTypeAAreaHref ∷ Element → Maybe Text
-getOnlyOfTypeAAreaHref e = (^. attribute "href") =<< (asum $ getOnlyOfType <$> [ "a", "area" ] <*> pure e)
+getOnlyOfTypeAAreaHref e = (^. attribute "href") =<< asum (getOnlyOfType <$> [ "a", "area" ] <*> pure e)
 
 extractValue ∷ Element → Maybe Text
 extractValue e = asum $ [ getAbbrTitle, getDataInputValue, getImgAreaAlt, getAllText ] <*> pure e
@@ -148,7 +148,7 @@ extractValueTitle ∷ Element → Maybe Text
 extractValueTitle e = if' (isJust $ e ^? hasClass "value-title") $ e ^. attribute "title"
 
 extractValueClassPattern ∷ [Element → Maybe Text] → Element → Maybe Text
-extractValueClassPattern fs e = if' (isJust $ e ^? valueParts) $ extractValueParts
+extractValueClassPattern fs e = if' (isJust $ e ^? valueParts) extractValueParts
   where extractValueParts   = Just . T.concat . catMaybes $ e ^.. valueParts . to extractValuePart
         extractValuePart e' = asum $ fs <*> pure e'
         valueParts          ∷ Applicative f => (Element → f Element) → Element → f Element
@@ -183,7 +183,7 @@ extractProperty U n e' =
           , getAbbrTitle, getDataInputValue, getAllText ]
 extractProperty Dt n e' =
   findProperty e' (className Dt n) >>=
-  extract ((extractValueClassPattern ms) : ms ++ [getAllText])
+  extract (extractValueClassPattern ms : ms ++ [getAllText])
   where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]
 extractProperty E n e' = findProperty e' (className E n) >>= liftM maybeToList getAllHtml
 
@@ -200,8 +200,8 @@ extractPropertyDt n e = catMaybes $ readISO <$> T.unpack <$> extractProperty Dt 
                                      , isoParse $ Just "%H:%M:%SZ"
                                      , isoParse $ Just "%H:%M:%S"
                                      , isoParse $ Just "%H:%M"
-                                     , parseTimeD $ "%G-W%V-%u"
-                                     , parseTimeD $ "%G-W%V"
+                                     , parseTimeD "%G-W%V-%u"
+                                     , parseTimeD "%G-W%V"
                                      , isoParse Nothing ]
         isoParse = parseTimeD . iso8601DateFormat
         parseTimeD = parseTimeM True defaultTimeLocale 
