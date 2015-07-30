@@ -8,6 +8,7 @@ import qualified Data.Text.Lazy as TL
 import           Data.Text (Text)
 import           Data.Foldable (asum)
 import           Data.Maybe
+import           Data.Time.Format
 import           Control.Applicative
 import           Text.XML.Lens hiding (re)
 import           Text.Blaze
@@ -159,6 +160,17 @@ extractPropertyL t n e = TL.fromStrict <$> extractProperty t n e
 
 extractPropertyR ∷ Read α ⇒ PropType → String → Element → [α]
 extractPropertyR t n e = catMaybes $ readMay <$> T.unpack <$> extractProperty t n e
+
+extractPropertyDt ∷ ParseTime α ⇒ String → Element → [α]
+extractPropertyDt n e = catMaybes $ readISO <$> T.unpack <$> extractProperty Dt n e
+  where readISO x = asum $ map ($ x) [ isoParse $ Just "%H:%M:%S%z"
+                                     , isoParse $ Just "%H:%M:%SZ"
+                                     , isoParse $ Just "%H:%M:%S"
+                                     , parseTime defaultTimeLocale $ "%G-W%V-%u"
+                                     , parseTime defaultTimeLocale $ "%G-W%V"
+                                     , isoParse Nothing ]
+        isoParse = parseTime defaultTimeLocale . iso8601DateFormat
+
 
 implyProperty ∷ PropType → String → Element → Maybe Text
 implyProperty P "name"  e = asum $ [ getImgAreaAlt, getAbbrTitle

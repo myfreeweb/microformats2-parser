@@ -89,7 +89,7 @@ extractCard e = def { cardName              = extractPropertyL P "name" e
                                                   ++ (map (AdrAdr . extractAdr) $ findPropertyMicroformat e "p-adr")
                     , cardTel               = extractPropertyL P "tel" e
                     , cardNote              = extractPropertyL P "note" e
-                    , cardBday              = extractPropertyR Dt "bday" e
+                    , cardBday              = extractPropertyDt "bday" e
                     , cardKey               = extractPropertyL U "key" e
                     , cardOrg               = filter (/= CardCard def) $
                                                 (TextCard <$> extractPropertyL P "org" e)
@@ -99,4 +99,26 @@ extractCard e = def { cardName              = extractPropertyL P "name" e
                     , cardImpp              = extractPropertyL U "impp" e
                     , cardSex               = extractPropertyL P "sex" e
                     , cardGenderIdentity    = extractPropertyL P "gender-identity" e
-                    , cardAnniversary       = extractPropertyR Dt "anniversary" e }
+                    , cardAnniversary       = extractPropertyDt "anniversary" e }
+
+
+-- | Parses all h-cite entries inside of an element.
+parseCite ∷ Element → [Cite]
+parseCite = map extractCite . findCite
+
+-- | Finds all h-cite elements inside of an element.
+findCite ∷ Element → [Element]
+findCite = findMicroformat "h-cite"
+
+-- | Parses an element as h-cite.
+extractCite ∷ Element → Cite
+extractCite e = def { citeName        = extractPropertyL P "name" e
+                    , citePublished   = extractPropertyDt "published" e
+                    , citeAuthor      = filter (/= CardCard def) $
+                                          (TextCard <$> extractPropertyL P "author" e)
+                                          ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-author")
+                    , citeUrl         = extractPropertyL U "url" e
+                    , citeUid         = extractPropertyL U "uid" e
+                    , citePublication = extractPropertyL P "publication" e
+                    , citeAccessed    = extractPropertyDt "accessed" e
+                    , citeContent     = map TextContent $ extractPropertyL P "content" e }

@@ -5,6 +5,8 @@ module Data.Microformats2.ParserSpec (spec) where
 import           Test.Hspec
 import           TestCommon
 import           Data.Default
+import           Data.Time.Clock
+import           Data.Time.Calendar
 import           Data.Microformats2
 import           Data.Microformats2.Parser
 import           Control.Applicative
@@ -172,3 +174,21 @@ spec = do
         </div>|] `shouldBe` [ def { cardOrg = [ TextCard "Microformats"
                                                 , (CardCard $ def { cardName = pure "IndieWebCamp" }) ] }
                             , def { cardName = pure "IndieWebCamp" }]
+
+  describe "parseCite" $ do
+    let parseCite' = parseCite . documentRoot . parseLBS
+
+    it "parses valid h-cite" $ do
+      parseCite' [xml|<div>
+          <article class="h-cite">
+            <a class="p-name u-url u-uid" href="https://youtu.be/E99FnoYqoII">Rails is Omakase</a>
+            <span class="p-author h-card"><span class="p-name">DHH</span></span>
+            <time class="dt-published">2013-01-25</time>
+            <p class="p-content">Rails is not that. Rails is omakase...</p>
+          </article>
+        </div>|] `shouldBe` [ def { citeName = pure "Rails is Omakase"
+                                  , citeUrl = pure "https://youtu.be/E99FnoYqoII"
+                                  , citeUid = pure "https://youtu.be/E99FnoYqoII"
+                                  , citeAuthor = pure $ CardCard $ def { cardName = pure "DHH" }
+                                  , citeContent = pure $ TextContent "Rails is not that. Rails is omakase..."
+                                  , citePublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) } ]
