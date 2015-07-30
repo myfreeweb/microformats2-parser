@@ -10,6 +10,19 @@ The types are located in a separate package called [microformats2-types].
 [sweetroll]: https://github.com/myfreeweb/sweetroll
 [microformats2-types]: https://github.com/myfreeweb/microformats2-types
 
+## Usage
+
+```haskell
+{-# LANGUAGE OverloadedStrings #-}
+import Data.Microformats2.Parser
+import Data.Microformats2.Types
+
+parseEntry Sanitize $ documentRoot $ parseLBS "<body><p class=h-entry><h1 class=p-name>Yay!</h1></p></body>"
+-- [ Entry { entryName = [ "Yay!" ], ... } ]
+```
+
+Look at the API docs [on Hackage](https://hackage.haskell.org/package/microformats2-parser) for more info.
+
 ## Development
 
 Use [stack] to build.  
