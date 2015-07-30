@@ -1,4 +1,4 @@
-# microformats2-parser [![Hackage](https://img.shields.io/hackage/v/microformats2-parser.svg?style=flat)](https://hackage.haskell.org/package/microformats2-parser) [![unlicense](https://img.shields.io/badge/un-license-green.svg?style=flat)](http://unlicense.org)
+# microformats2-parser [![Hackage](https://img.shields.io/hackage/v/microformats2-parser.svg?style=flat)](https://hackage.haskell.org/package/microformats2-parser) [![Build Status](https://img.shields.io/travis/myfreeweb/microformats2-parser.svg?style=flat)](https://travis-ci.org/myfreeweb/microformats2-parser) [![Coverage Status](https://img.shields.io/coveralls/myfreeweb/microformats2-parser.svg?style=flat)](https://coveralls.io/r/myfreeweb/microformats2-parser) [![unlicense](https://img.shields.io/badge/un-license-green.svg?style=flat)](http://unlicense.org)
 
 [Microformats 2] parser for Haskell!
 
