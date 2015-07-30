@@ -103,6 +103,14 @@ spec = do
                                   , cardName = pure "Joe Bloggs"
                                   , cardEmail = pure "mailto:joebloggs@example.com" } ]
 
+    it "parses valid implied h-card" $ do
+      parseCard' [xml|<div>
+          <a class="h-card" href="http://example.org">Joe Bloggs</a>
+          <img class="h-card" src="http://example.org/photo.jpg" />
+        </div>|] `shouldBe` [ def { cardUrl = pure "http://example.org"
+                                  , cardName = pure "Joe Bloggs" }
+                            , def { cardPhoto = pure "http://example.org/photo.jpg" }]
+
     it "parses p-adr" $ do
       parseCard' [xml|<div>
           <section class="h-card">

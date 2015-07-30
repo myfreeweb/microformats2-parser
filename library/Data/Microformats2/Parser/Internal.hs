@@ -64,11 +64,9 @@ _ContentWithAlts = prism' NodeContent $ \s → case s of
   NodeElement e → e ^. el "img" . attribute "alt"
   _ → Nothing
 
-basicText ∷ Traversal' Element Text
-basicText = entire . nodes . traverse . _Content'
-
 getText ∷ Element → Maybe Text
-getText e = Just . T.strip <$> T.concat $ e ^.. basicText
+getText e = if T.null $ fromMaybe "" txt then Nothing else txt
+  where txt = listToMaybe $ T.strip <$> e ^.. entire . nodes . traverse . _Content
 
 getAllText ∷ Element → Maybe Text
 getAllText e = Just . T.strip <$> T.concat $ e ^.. entire . nodes . traverse . _ContentWithAlts
@@ -128,11 +126,17 @@ extractValueClassPattern fs e = if' (isJust $ e ^? valueParts) $ extractValuePar
         valueParts          ∷ Applicative f => (Element → f Element) → Element → f Element
         valueParts          = entire . hasOneClass ["value", "value-title"]
 
+className ∷ PropType → String → String
+className P  n = "p-" ++ n
+className U  n = "u-" ++ n
+className Dt n = "dt-" ++ n
+className E  n = "e-" ++ n
+
 findProperty ∷ Element → String → [Element]
 findProperty e n = filter (/= e) $ e ^.. entireNotMicroformat . hasClass n
 
-findPropertyMicroformat ∷ Element → String → [Element]
-findPropertyMicroformat e n = filter (/= e) $ e ^.. entire . hasClass n
+findPropertyMicroformat ∷ Element → String → String → [Element]
+findPropertyMicroformat e n s = filter (/= e) $ e ^.. entire . hasClass n . hasClass s
 
 data PropType = P | U | Dt | E
 
@@ -141,22 +145,23 @@ extract ps e = catMaybes $ [ \x -> asum $ ps <*> pure x ] <*> pure e
 
 extractProperty ∷ PropType → String → Element → [Text]
 extractProperty P n e' =
-  findProperty e' ("p-" ++ n) >>=
+  findProperty e' (className P n) >>=
   extract [ extractValueClassPattern [extractValueTitle, extractValue]
           , extractValue ]
 extractProperty U n e' =
-  findProperty e' ("u-" ++ n) >>=
+  findProperty e' (className U n) >>=
   extract [ getAAreaHref, getImgAudioVideoSourceSrc
           , extractValueClassPattern [extractValueTitle, extractValue]
           , getAbbrTitle, getDataInputValue, getAllText ]
 extractProperty Dt n e' =
-  findProperty e' ("dt-" ++ n) >>=
+  findProperty e' (className Dt n) >>=
   extract ((extractValueClassPattern ms) : ms ++ [getAllText])
   where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]
-extractProperty E n e' = findProperty e' ("e-" ++ n) >>= getAllHtml
+extractProperty E n e' = findProperty e' (className E n) >>= getAllHtml
 
 extractPropertyL ∷ PropType → String → Element → [TL.Text]
-extractPropertyL t n e = TL.fromStrict <$> extractProperty t n e
+extractPropertyL t n e = TL.fromStrict <$> if null extracted then maybeToList $ implyProperty t n e else extracted
+  where extracted = extractProperty t n e
 
 extractPropertyR ∷ Read α ⇒ PropType → String → Element → [α]
 extractPropertyR t n e = catMaybes $ readMay <$> T.unpack <$> extractProperty t n e

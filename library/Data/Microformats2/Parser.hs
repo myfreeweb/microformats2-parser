@@ -56,7 +56,7 @@ extractAdr e = def { adrStreetAddress   = extractPropertyL P "street-address"   
                    , adrGeo             = filter (/= GeoGeo def) $
                                             (GeoGeo . extractGeo $ e) :
                                               (TextGeo <$> extractPropertyL P "geo" e)
-                                              ++ (map (GeoGeo . extractGeo) $ findPropertyMicroformat e "p-geo") }
+                                              ++ (map (GeoGeo . extractGeo) $ findPropertyMicroformat e "p-geo" "h-geo") }
 
 
 -- | Parses all h-card entries inside of an element.
@@ -86,14 +86,14 @@ extractCard e = def { cardName              = extractPropertyL P "name" e
                     , cardAdr               = filter (/= AdrAdr def) $
                                                 (AdrAdr . extractAdr $ e) :
                                                   (TextAdr <$> extractPropertyL P "adr" e)
-                                                  ++ (map (AdrAdr . extractAdr) $ findPropertyMicroformat e "p-adr")
+                                                  ++ (map (AdrAdr . extractAdr) $ findPropertyMicroformat e "p-adr" "h-adr")
                     , cardTel               = extractPropertyL P "tel" e
                     , cardNote              = extractPropertyL P "note" e
                     , cardBday              = extractPropertyDt "bday" e
                     , cardKey               = extractPropertyL U "key" e
                     , cardOrg               = filter (/= CardCard def) $
                                                 (TextCard <$> extractPropertyL P "org" e)
-                                                ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-org")
+                                                ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-org" "h-card")
                     , cardJobTitle          = extractPropertyL P "job-title" e
                     , cardRole              = extractPropertyL P "role" e
                     , cardImpp              = extractPropertyL U "impp" e
@@ -116,7 +116,7 @@ extractCite e = def { citeName        = extractPropertyL P "name" e
                     , citePublished   = extractPropertyDt "published" e
                     , citeAuthor      = filter (/= CardCard def) $
                                           (TextCard <$> extractPropertyL P "author" e)
-                                          ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-author")
+                                          ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-author" "h-card")
                     , citeUrl         = extractPropertyL U "url" e
                     , citeUid         = extractPropertyL U "uid" e
                     , citePublication = extractPropertyL P "publication" e
