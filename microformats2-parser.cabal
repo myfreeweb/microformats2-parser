@@ -6,8 +6,8 @@ homepage:        https://github.com/myfreeweb/microformats2-parser
 author:          Greg V
 copyright:       2015 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
-license:         OtherLicense
-license-file:    COPYING
+license:         PublicDomain
+license-file:    UNLICENSE
 build-type:      Simple
 cabal-version:   >= 1.18
 extra-source-files:
