@@ -10,6 +10,21 @@ The types are located in a separate package called [microformats2-types].
 [sweetroll]: https://github.com/myfreeweb/sweetroll
 [microformats2-types]: https://github.com/myfreeweb/microformats2-types
 
+## Development
+
+Use [stack] to build.  
+Use ghci to run tests quickly with `:test` (see the `.ghci` file).
+
+```bash
+$ stack build
+
+$ stack test && rm tests.tix
+
+$ stack ghci --ghc-options="-fno-hpc"
+```
+
+[stack]: https://github.com/commercialhaskell/stack
+
 ## License
 
 Copyright 2015 Greg V <greg@unrelenting.technology>  

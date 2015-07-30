@@ -2,8 +2,8 @@ flags: {}
 packages:
   - '.'
 extra-deps:
-  - microformats2-types-0.4.0
+  - microformats2-types-0.4.1
   - xml-lens-0.1.6.3
   # Transitive
   - setters-0.1
-resolver: lts-2.17
+resolver: nightly-2015-07-26
