@@ -26,11 +26,13 @@ library
       , time
       , either
       , safe
+      , containers
       , data-default
       , microformats2-types
       , html-conduit
       , xml-lens
       , blaze-markup
+      , xss-sanitize
       , pcre-heavy
     default-language: Haskell2010
     exposed-modules:
@@ -42,6 +44,7 @@ library
 test-suite tests
     build-depends:
         base >= 4.0.0.0 && < 5
+      , time
       , hspec
       , template-haskell
       , microformats2-parser

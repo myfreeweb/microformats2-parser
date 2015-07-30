@@ -3,14 +3,18 @@
 
 module Data.Microformats2.Parser.Internal where
 
+import           Control.Applicative
+import           Control.Monad (liftM)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import           Data.Text (Text)
 import           Data.Foldable (asum)
+import qualified Data.Set as S
+import qualified Data.Map as M
 import           Data.Maybe
 import           Data.Time.Format
-import           Control.Applicative
 import           Text.XML.Lens hiding (re)
+import           Text.HTML.SanitizeXSS
 import           Text.Blaze
 import           Text.Blaze.Renderer.Text
 import           Text.Regex.PCRE.Heavy
@@ -47,10 +51,8 @@ els ns f s = if (elementName s) `elem` ns then f s else pure s
 removeWhitespace ∷ Text → Text
 removeWhitespace = gsub [re|(\s+|&nbsp;)|] (" " ∷ String) -- lol vim |||||||
 
-_Content' ∷ Prism' Node Text
-_Content' = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
-  _ → Nothing
+getPrism ∷ Prism' Node Text → Element → Maybe Text
+getPrism t e = Just . T.strip <$> T.concat $ e ^.. nodes . traverse . t
 
 _InnerHtml ∷ Prism' Node Text
 _InnerHtml = prism' NodeContent $ \s → case s of
@@ -58,21 +60,45 @@ _InnerHtml = prism' NodeContent $ \s → case s of
   NodeElement e → Just . TL.toStrict . renderMarkup . toMarkup $ e
   _ → Nothing
 
-_ContentWithAlts ∷ Prism' Node Text
-_ContentWithAlts = prism' NodeContent $ \s → case s of
+getAllHtml ∷ Element → Maybe Text
+getAllHtml = getPrism _InnerHtml
+
+-- XXX: https://github.com/yesodweb/haskell-xss-sanitize/issues/11
+safeTagName ∷ Text → Bool
+safeTagName = (`S.member` (S.fromList [ "a", "b", "abbr", "acronym", "br", "ul", "li", "ol", "span", "strong", "em",
+                                        "i", "q", "img", "time", "strike", "kbd", "dl", "dt", "pre", "p", "blockquote",
+                                        "code", "cite", "figure", "figcaption", "big", "dfn" ]))
+
+sanitizeAttrs ∷ Element → Element
+sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe modify $ M.toList $ elementAttributes e }
+  where modify (Name name _ _, val) = sanitizeAttribute (name, val)
+        wrapName (name, val) = (Name name Nothing Nothing, val)
+
+_InnerHtmlSanitized ∷ Prism' Node Text
+_InnerHtmlSanitized = prism' NodeContent $ \s → case s of
   NodeContent c → Just $ removeWhitespace c
-  NodeElement e → e ^. el "img" . attribute "alt"
+  NodeElement e → if not $ safeTagName $ nameLocalName (elementName e)
+                       then Nothing
+                       else Just . TL.toStrict . renderMarkup . toMarkup $ sanitizeAttrs e
   _ → Nothing
+
+getAllHtmlSanitized ∷ Element → Maybe Text
+getAllHtmlSanitized = getPrism _InnerHtmlSanitized
+
+_InnerText ∷ Prism' Node Text
+_InnerText = prism' NodeContent $ \s → case s of
+  NodeContent c → Just $ removeWhitespace c
+  NodeElement e → if nameLocalName (elementName e) == "img"
+                       then e ^. el "img" . attribute "alt"
+                       else Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+  _ → Nothing
+
+getAllText ∷ Element → Maybe Text
+getAllText = getPrism _InnerText
 
 getText ∷ Element → Maybe Text
 getText e = if T.null $ fromMaybe "" txt then Nothing else txt
   where txt = listToMaybe $ T.strip <$> e ^.. entire . nodes . traverse . _Content
-
-getAllText ∷ Element → Maybe Text
-getAllText e = Just . T.strip <$> T.concat $ e ^.. entire . nodes . traverse . _ContentWithAlts
-
-getAllHtml ∷ Element → [Text]
-getAllHtml e = [T.strip <$> T.concat $ e ^.. nodes . traverse . _InnerHtml]
 
 getAbbrTitle ∷ Element → Maybe Text
 getAbbrTitle e = e ^. el "abbr" . attribute "title"
@@ -157,7 +183,7 @@ extractProperty Dt n e' =
   findProperty e' (className Dt n) >>=
   extract ((extractValueClassPattern ms) : ms ++ [getAllText])
   where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]
-extractProperty E n e' = findProperty e' (className E n) >>= getAllHtml
+extractProperty E n e' = findProperty e' (className E n) >>= liftM maybeToList getAllHtml
 
 extractPropertyL ∷ PropType → String → Element → [TL.Text]
 extractPropertyL t n e = TL.fromStrict <$> if null extracted then maybeToList $ implyProperty t n e else extracted
@@ -171,11 +197,14 @@ extractPropertyDt n e = catMaybes $ readISO <$> T.unpack <$> extractProperty Dt 
   where readISO x = asum $ map ($ x) [ isoParse $ Just "%H:%M:%S%z"
                                      , isoParse $ Just "%H:%M:%SZ"
                                      , isoParse $ Just "%H:%M:%S"
+                                     , isoParse $ Just "%H:%M"
                                      , parseTime defaultTimeLocale $ "%G-W%V-%u"
                                      , parseTime defaultTimeLocale $ "%G-W%V"
                                      , isoParse Nothing ]
         isoParse = parseTime defaultTimeLocale . iso8601DateFormat
 
+extractPropertyContent ∷ (Element → Maybe Text) → PropType → String → Element → [TL.Text]
+extractPropertyContent ex t n e = findProperty e (className t n) >>= extract [ ex ] >>= return . TL.fromStrict
 
 implyProperty ∷ PropType → String → Element → Maybe Text
 implyProperty P "name"  e = asum $ [ getImgAreaAlt, getAbbrTitle

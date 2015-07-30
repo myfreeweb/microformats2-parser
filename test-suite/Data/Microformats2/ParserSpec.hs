@@ -144,7 +144,7 @@ spec = do
                                                                  , adrCountryName = pure "Iceland"
                                                                  , adrGeo = [ GeoGeo $ def { geoLongitude = pure (-122.03016) } ] }) } ]
 
-    it "parses p-geo into p-adr" $ do
+    it "parses h-geo into p-adr" $ do
       parseCard' [xml|<div>
           <section class="h-card">
             <p class="p-geo h-geo"> <span class="p-longitude">-122.03016</span> </p>
@@ -184,7 +184,7 @@ spec = do
                             , def { cardName = pure "IndieWebCamp" }]
 
   describe "parseCite" $ do
-    let parseCite' = parseCite . documentRoot . parseLBS
+    let parseCite' = parseCite Strip . documentRoot . parseLBS
 
     it "parses valid h-cite" $ do
       parseCite' [xml|<div>
@@ -200,3 +200,56 @@ spec = do
                                   , citeAuthor = pure $ CardCard $ def { cardName = pure "DHH" }
                                   , citeContent = pure $ TextContent "Rails is not that. Rails is omakase..."
                                   , citePublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) } ]
+
+
+  describe "parseEntry" $ do
+    let parseEntry' m = parseEntry m . documentRoot . parseLBS
+
+    it "parses valid h-entry" $ do
+      parseEntry' Strip [xml|<div>
+          <article class="h-entry">
+            <a class="p-name u-url u-uid" href="https://youtu.be/E99FnoYqoII">Rails is Omakase</a>
+            <span class="p-author h-card"><span class="p-name">DHH</span></span>
+            <a href="http://david.heinemeierhansson.com" class="p-author h-card">DHH</a>
+            <a href="http://david.heinemeierhansson.com" class="p-author">David</a>
+            <time class="dt-published">2013-01-25</time>
+            <time class="dt-updated">2013-01-25T01:23</time>
+            <p class="p-content">Rails is not that. Rails is omakase...</p>
+          </article>
+        </div>|] `shouldBe` [ def { entryName = pure "Rails is Omakase"
+                                  , entryUrl = pure "https://youtu.be/E99FnoYqoII"
+                                  , entryUid = pure "https://youtu.be/E99FnoYqoII"
+                                  , entryAuthor = [ TextCard "David"
+                                                  , CardCard $ def { cardName = pure "DHH" }
+                                                  , CardCard $ def { cardName = pure "DHH", cardUrl = pure "http://david.heinemeierhansson.com" } ]
+                                  , entryContent = pure $ TextContent "Rails is not that. Rails is omakase..."
+                                  , entryPublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0)
+                                  , entryUpdated = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 4980) } ]
+
+    it "supports different html content modes" $ do
+      let src = [xml|<div>
+          <article class="h-entry">
+            <p class="p-content"><script>alert('XSS')</script><a href="http://rubyonrails.org" onclick="alert()">Rails</a> is not that. Rails is omakase...</p>
+          </article>
+        </div>|]
+      parseEntry' Unsafe   src `shouldBe` [ def { entryContent = pure $ TextContent "<script>alert('XSS')</script><a href=\"http://rubyonrails.org\" onclick=\"alert()\">Rails</a> is not that. Rails is omakase..." } ]
+      parseEntry' Strip    src `shouldBe` [ def { entryContent = pure $ TextContent "alert('XSS')Rails is not that. Rails is omakase..." } ]
+      parseEntry' Escape   src `shouldBe` [ def { entryContent = pure $ TextContent "&lt;script&gt;alert('XSS')&lt;/script&gt;&lt;a href=\"http://rubyonrails.org\" onclick=\"alert()\"&gt;Rails&lt;/a&gt; is not that. Rails is omakase..." } ]
+      parseEntry' Sanitize src `shouldBe` [ def { entryContent = pure $ TextContent "<a href=\"http://rubyonrails.org\">Rails</a> is not that. Rails is omakase..." } ]
+
+    it "parses p-location" $ do
+      parseEntry' Strip [xml|<div>
+          <article class="h-entry">
+            <p class="p-location h-card">
+              <a class="p-name u-url" href="http://penisland.net">Pen Island</a>
+            </p>
+            <p class="p-location h-adr">
+              <span class="p-country-name">USA</span>
+            </p>
+            <p class="p-location h-geo">
+              <data class="p-latitude" value="123.45">
+            </p>
+          </article>
+        </div>|] `shouldBe` [ def { entryLocation = [ CardLoc $ def { cardName = pure "Pen Island", cardUrl = pure "http://penisland.net" }
+                                                    , AdrLoc $ def { adrCountryName = pure "USA" }
+                                                    , GeoLoc $ def { geoLatitude = pure 123.45 } ] } ]

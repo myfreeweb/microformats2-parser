@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax #-}
+{-# LANGUAGE UnicodeSyntax, OverloadedStrings #-}
 
 module Data.Microformats2.Parser (
   module Data.Microformats2.Parser
@@ -9,13 +9,20 @@ module Data.Microformats2.Parser (
 , sinkDoc
 ) where
 
--- import qualified Data.Text as T
+import           Control.Applicative
+import           Control.Monad
 import           Data.Microformats2
 import           Data.Microformats2.Parser.Internal
 import           Data.Default
-import           Control.Applicative
+-- import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
 import           Text.HTML.DOM
 import           Text.XML.Lens
+
+data HtmlContentMode = Unsafe | Strip | Escape | Sanitize
+
+(.&&.) ∷ Monad μ ⇒ μ Bool → μ Bool → μ Bool
+(.&&.) = liftM2 (&&)
 
 findMicroformat ∷ String → Element → [Element]
 findMicroformat n e = e ^.. entire . hasClass n
@@ -55,8 +62,8 @@ extractAdr e = def { adrStreetAddress   = extractPropertyL P "street-address"   
                    , adrLabel           = extractPropertyL P "label"            e
                    , adrGeo             = filter (/= GeoGeo def) $
                                             (GeoGeo . extractGeo $ e) :
-                                              (TextGeo <$> extractPropertyL P "geo" e)
-                                              ++ (map (GeoGeo . extractGeo) $ findPropertyMicroformat e "p-geo" "h-geo") }
+                                                 (TextGeo <$> extractPropertyL P "geo" e)
+                                              ++ (GeoGeo . extractGeo <$> findPropertyMicroformat e "p-geo" "h-geo") }
 
 
 -- | Parses all h-card entries inside of an element.
@@ -85,14 +92,14 @@ extractCard e = def { cardName              = extractPropertyL P "name" e
                     , cardCategory          = extractPropertyL P "category" e
                     , cardAdr               = filter (/= AdrAdr def) $
                                                 (AdrAdr . extractAdr $ e) :
-                                                  (TextAdr <$> extractPropertyL P "adr" e)
+                                                     (TextAdr <$> extractPropertyL P "adr" e)
                                                   ++ (map (AdrAdr . extractAdr) $ findPropertyMicroformat e "p-adr" "h-adr")
                     , cardTel               = extractPropertyL P "tel" e
                     , cardNote              = extractPropertyL P "note" e
                     , cardBday              = extractPropertyDt "bday" e
                     , cardKey               = extractPropertyL U "key" e
                     , cardOrg               = filter (/= CardCard def) $
-                                                (TextCard <$> extractPropertyL P "org" e)
+                                                   (TextCard <$> extractPropertyL P "org" e)
                                                 ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-org" "h-card")
                     , cardJobTitle          = extractPropertyL P "job-title" e
                     , cardRole              = extractPropertyL P "role" e
@@ -103,22 +110,61 @@ extractCard e = def { cardName              = extractPropertyL P "name" e
 
 
 -- | Parses all h-cite entries inside of an element.
-parseCite ∷ Element → [Cite]
-parseCite = map extractCite . findCite
+parseCite ∷ HtmlContentMode → Element → [Cite]
+parseCite m = map (extractCite m) . findCite
 
 -- | Finds all h-cite elements inside of an element.
 findCite ∷ Element → [Element]
 findCite = findMicroformat "h-cite"
 
 -- | Parses an element as h-cite.
-extractCite ∷ Element → Cite
-extractCite e = def { citeName        = extractPropertyL P "name" e
-                    , citePublished   = extractPropertyDt "published" e
-                    , citeAuthor      = filter (/= CardCard def) $
-                                          (TextCard <$> extractPropertyL P "author" e)
-                                          ++ (map (CardCard . extractCard) $ findPropertyMicroformat e "p-author" "h-card")
-                    , citeUrl         = extractPropertyL U "url" e
-                    , citeUid         = extractPropertyL U "uid" e
-                    , citePublication = extractPropertyL P "publication" e
-                    , citeAccessed    = extractPropertyDt "accessed" e
-                    , citeContent     = map TextContent $ extractPropertyL P "content" e }
+extractCite ∷ HtmlContentMode → Element → Cite
+extractCite m e = def { citeName        = extractPropertyL P "name" e
+                      , citePublished   = extractPropertyDt "published" e
+                      , citeAuthor      = filter (/= CardCard def) $
+                                               (TextCard <$> extractPropertyL P "author" e)
+                                            ++ (CardCard . extractCard <$> findPropertyMicroformat e "p-author" "h-card")
+                      , citeUrl         = extractPropertyL U "url" e
+                      , citeUid         = extractPropertyL U "uid" e
+                      , citePublication = extractPropertyL P "publication" e
+                      , citeAccessed    = extractPropertyDt "accessed" e
+                      , citeContent     = TextContent <$> processContent m e }
+
+
+-- | Parses all h-entry entries inside of an element.
+parseEntry ∷ HtmlContentMode → Element → [Entry]
+parseEntry m = map (extractEntry m) . findEntry
+
+-- | Finds all h-entry elements inside of an element.
+findEntry ∷ Element → [Element]
+findEntry = findMicroformat "h-entry"
+
+-- | Parses an element as h-entry.
+extractEntry ∷ HtmlContentMode → Element → Entry
+extractEntry m e = def { entryName        = extractPropertyL P "name" e
+                       , entrySummary     = extractPropertyL P "summary" e
+                       , entryContent     = TextContent <$> processContent m e 
+                       , entryPublished   = extractPropertyDt "published" e
+                       , entryUpdated     = extractPropertyDt "updated" e
+                       , entryAuthor      = filter (/= CardCard def) $
+                                                (TextCard <$> extractPropertyL P "author" e)
+                                             ++ (CardCard . extractCard <$> findPropertyMicroformat e "p-author" "h-card")
+                       , entryCategory    = extractPropertyL P "category" e
+                       , entryUrl         = extractPropertyL U "url" e
+                       , entryUid         = extractPropertyL U "uid" e
+                       , entryLocation    = filter ((/= CardLoc def) .&&. (/= AdrLoc def) .&&. (/= GeoLoc def)) $
+                                                 (CardLoc . extractCard <$> findPropertyMicroformat e "p-location" "h-card")
+                                              ++ (AdrLoc  . extractAdr <$> findPropertyMicroformat e "p-location" "h-adr")
+                                              ++ (GeoLoc  . extractGeo <$> findPropertyMicroformat e "p-location" "h-geo")
+                       , entryComments    = filter (/= CiteEntry def) $
+                                             (CiteEntry . extractCite m <$> findPropertyMicroformat e "p-comment" "h-cite")
+                       , entrySyndication = extractPropertyL U "syndication" e
+                       , entryInReplyTo   = UrlEntry <$> extractPropertyL U "in-reply-to" e
+                       , entryLikeOf      = UrlEntry <$> extractPropertyL U "like-of" e
+                       , entryRepostOf    = UrlEntry <$> extractPropertyL U "repost-of" e }
+
+processContent ∷ HtmlContentMode → Element → [LT.Text]
+processContent Unsafe   = extractPropertyContent getAllHtml P "content"
+processContent Strip    = extractPropertyContent getAllText P "content"
+processContent Escape   = map (LT.replace "<" "&lt;" . LT.replace ">" "&gt;" . LT.replace "&" "&amp;") . extractPropertyContent getAllHtml P "content"
+processContent Sanitize = extractPropertyContent getAllHtmlSanitized P "content"
