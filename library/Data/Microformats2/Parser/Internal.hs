@@ -128,7 +128,10 @@ extractValueClassPattern fs e = if' (isJust $ e ^? valueParts) $ extractValuePar
         valueParts          = entire . hasOneClass ["value", "value-title"]
 
 findProperty ∷ Element → String → [Element]
-findProperty e n = e ^.. entireNotMicroformat . hasClass n
+findProperty e n = filter (/= e) $ e ^.. entireNotMicroformat . hasClass n
+
+findPropertyMicroformat ∷ Element → String → [Element]
+findPropertyMicroformat e n = filter (/= e) $ e ^.. entire . hasClass n
 
 data PropType = P | U | Dt | E
 

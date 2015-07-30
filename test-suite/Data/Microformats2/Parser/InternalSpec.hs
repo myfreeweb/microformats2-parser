@@ -16,51 +16,51 @@ spec = do
   describe "extractProperty" $ do
     it "parses p- properties" $ do
       let nm = extractProperty P "name" . documentRoot . parseLBS
-      nm [xml|<span class="p-name">Hello Basic</span>|] `shouldBe` pure "Hello Basic"
-      nm [xml|<abbr class="p-name" title="Hello Abbr">HA</abbr>|] `shouldBe` pure "Hello Abbr"
-      nm [xml|<abbr class="p-name">HA</abbr>|] `shouldBe` pure "HA"
-      nm [xml|<data class="p-name" value="Hello Data" />|] `shouldBe` pure "Hello Data"
-      nm [xml|<input class="p-name" value="Hello Input" />|] `shouldBe` pure "Hello Input"
-      nm [xml|<img class="p-name" alt="Hello Img" />|] `shouldBe` pure "Hello Img"
-      nm [xml|<area class="p-name" alt="Hello Area" />|] `shouldBe` pure "Hello Area"
-      nm [xml|<span class="p-name"> ignore <i class="value">Hello</i>  <img class="value" alt="ValuePattern" src="x.png"> </span>|] `shouldBe` pure "HelloValuePattern"
-      nm [xml|<span class="p-name"> ignore <em class="value-title" title="Hello">Hi</em>  <span class="value">Value-Title</span></span>|] `shouldBe` pure "HelloValue-Title"
-      nm [xml|<span class="p-name">  Hello <img alt="Span With Img" src="x.png"> </span>|] `shouldBe` pure "Hello Span With Img"
-      nm [xml|<span class="p-name"> <span class="value"> 	Hello 	
+      nm [xml|<div><span class="p-name">Hello Basic</span>|] `shouldBe` pure "Hello Basic"
+      nm [xml|<div><abbr class="p-name" title="Hello Abbr">HA</abbr>|] `shouldBe` pure "Hello Abbr"
+      nm [xml|<div><abbr class="p-name">HA</abbr>|] `shouldBe` pure "HA"
+      nm [xml|<div><data class="p-name" value="Hello Data" />|] `shouldBe` pure "Hello Data"
+      nm [xml|<div><input class="p-name" value="Hello Input" />|] `shouldBe` pure "Hello Input"
+      nm [xml|<div><img class="p-name" alt="Hello Img" />|] `shouldBe` pure "Hello Img"
+      nm [xml|<div><area class="p-name" alt="Hello Area" />|] `shouldBe` pure "Hello Area"
+      nm [xml|<div><span class="p-name"> ignore <i class="value">Hello</i>  <img class="value" alt="ValuePattern" src="x.png"> </span>|] `shouldBe` pure "HelloValuePattern"
+      nm [xml|<div><span class="p-name"> ignore <em class="value-title" title="Hello">Hi</em>  <span class="value">Value-Title</span></span>|] `shouldBe` pure "HelloValue-Title"
+      nm [xml|<div><span class="p-name">  Hello <img alt="Span With Img" src="x.png"> </span>|] `shouldBe` pure "Hello Span With Img"
+      nm [xml|<div><span class="p-name"> <span class="value"> 	Hello 	
   <img alt="Span With Img" src="x.png"> </span> 	<em class="value-title" title="&& Value Title">nope</em> </span>|] `shouldBe` pure "Hello Span With Img&& Value Title"
 
     it "parses u- properties" $ do
       let ur = extractProperty U "url" . documentRoot . parseLBS
-      ur [xml|<a class="u-url" href="/yo/a">link</a>|] `shouldBe` pure "/yo/a"
-      ur [xml|<area class="u-url" href="/yo/area"/>|] `shouldBe` pure "/yo/area"
-      ur [xml|<img class="u-url" src="/yo/img"/>|] `shouldBe` pure "/yo/img"
-      ur [xml|<audio class="u-url" src="/yo/audio"/>|] `shouldBe` pure "/yo/audio"
-      ur [xml|<video class="u-url" src="/yo/video"/>|] `shouldBe` pure "/yo/video"
-      ur [xml|<source class="u-url" src="/yo/source"/>|] `shouldBe` pure "/yo/source"
-      ur [xml|<span class="u-url"><b class=value>/yo</b><em class="value">/vcp</span>|] `shouldBe` pure "/yo/vcp"
-      ur [xml|<abbr class="u-url" title="/yo/abbr"/>|] `shouldBe` pure "/yo/abbr"
-      ur [xml|<data class="u-url" value="/yo/data"/>|] `shouldBe` pure "/yo/data"
-      ur [xml|<input class="u-url" value="/yo/input"/>|] `shouldBe` pure "/yo/input"
-      ur [xml|<span class="u-url">/yo/span</span>|] `shouldBe` pure "/yo/span"
+      ur [xml|<div><a class="u-url" href="/yo/a">link</a>|] `shouldBe` pure "/yo/a"
+      ur [xml|<div><area class="u-url" href="/yo/area"/>|] `shouldBe` pure "/yo/area"
+      ur [xml|<div><img class="u-url" src="/yo/img"/>|] `shouldBe` pure "/yo/img"
+      ur [xml|<div><audio class="u-url" src="/yo/audio"/>|] `shouldBe` pure "/yo/audio"
+      ur [xml|<div><video class="u-url" src="/yo/video"/>|] `shouldBe` pure "/yo/video"
+      ur [xml|<div><source class="u-url" src="/yo/source"/>|] `shouldBe` pure "/yo/source"
+      ur [xml|<div><span class="u-url"><b class=value>/yo</b><em class="value">/vcp</span>|] `shouldBe` pure "/yo/vcp"
+      ur [xml|<div><abbr class="u-url" title="/yo/abbr"/>|] `shouldBe` pure "/yo/abbr"
+      ur [xml|<div><data class="u-url" value="/yo/data"/>|] `shouldBe` pure "/yo/data"
+      ur [xml|<div><input class="u-url" value="/yo/input"/>|] `shouldBe` pure "/yo/input"
+      ur [xml|<div><span class="u-url">/yo/span</span>|] `shouldBe` pure "/yo/span"
 
     it "parses dt- properties" $ do
       let dt = extractProperty Dt "updated" . documentRoot . parseLBS
-      dt [xml|<time class="dt-updated" datetime="ti.me">someday</time>|] `shouldBe` pure "ti.me"
-      dt [xml|<ins class="dt-updated" datetime="i.ns">someday</ins>|] `shouldBe` pure "i.ns"
-      dt [xml|<del class="dt-updated" datetime="d.el">someday</del>|] `shouldBe` pure "d.el"
-      dt [xml|<abbr class="dt-updated" title="ab.br">AB</abbr>|] `shouldBe` pure "ab.br"
-      dt [xml|<data class="dt-updated" value="da.ta"/>|] `shouldBe` pure "da.ta"
-      dt [xml|<input class="dt-updated" value="i.np.ut"/>|] `shouldBe` pure "i.np.ut"
-      dt [xml|<span class="dt-updated">
+      dt [xml|<div><time class="dt-updated" datetime="ti.me">someday</time>|] `shouldBe` pure "ti.me"
+      dt [xml|<div><ins class="dt-updated" datetime="i.ns">someday</ins>|] `shouldBe` pure "i.ns"
+      dt [xml|<div><del class="dt-updated" datetime="d.el">someday</del>|] `shouldBe` pure "d.el"
+      dt [xml|<div><abbr class="dt-updated" title="ab.br">AB</abbr>|] `shouldBe` pure "ab.br"
+      dt [xml|<div><data class="dt-updated" value="da.ta"/>|] `shouldBe` pure "da.ta"
+      dt [xml|<div><input class="dt-updated" value="i.np.ut"/>|] `shouldBe` pure "i.np.ut"
+      dt [xml|<div><span class="dt-updated">
             <abbr class="value" title="vcp">VCP</abbr>
             <time class="value" datetime="ti">TIME</time>
             <ins class="value" datetime="me">lol</time>
           </span>|] `shouldBe` pure "vcptime"
-      dt [xml|<span class="dt-updated">date</span>|] `shouldBe` pure "date"
+      dt [xml|<div><span class="dt-updated">date</span>|] `shouldBe` pure "date"
 
     it "parses e- properties" $ do
       let ct = extractProperty E "content" . documentRoot . parseLBS
-      ct [xml|<div class="e-content"><em>hello html</em>!</div>|] `shouldBe` pure "<em>hello html</em>!"
+      ct [xml|<div><div class="e-content"><em>hello html</em>!</div>|] `shouldBe` pure "<em>hello html</em>!"
 
   describe "implyProperty" $ do
     it "parses implied p-name" $ do
