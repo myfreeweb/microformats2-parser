@@ -70,6 +70,9 @@ test-suite tests
         base >= 4.0.0.0 && < 5
       , mtl
       , time
+      , text
+      , bytestring
+      , network-uri
       , hspec
       , template-haskell
       , microformats2-parser
