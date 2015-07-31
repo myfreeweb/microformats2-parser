@@ -19,6 +19,7 @@ spec = do
     it "parses p- properties" $ do
       let nm = extractProperty P "name" . documentRoot . parseLBS
       nm [xml|<div><span class="p-name">Hello Basic</span>|] `shouldBe` pure "Hello Basic"
+      nm [xml|<div><p><span class="p-name">Hello Nested</span>|] `shouldBe` pure "Hello Nested"
       nm [xml|<div><abbr class="p-name" title="Hello Abbr">HA</abbr>|] `shouldBe` pure "Hello Abbr"
       nm [xml|<div><abbr class="p-name">HA</abbr>|] `shouldBe` pure "HA"
       nm [xml|<div><data class="p-name" value="Hello Data" />|] `shouldBe` pure "Hello Data"

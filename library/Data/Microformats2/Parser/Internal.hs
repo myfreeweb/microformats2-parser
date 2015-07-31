@@ -25,12 +25,12 @@ import           Safe (readMay)
 if' ∷ Bool → Maybe a → Maybe a
 if' c x = if c then x else Nothing
 
-notMicroformat ∷ Traversal' Element Element
-notMicroformat = attributeSatisfies "class" $ not . (≈ [re|h-\w+|])
-
 entireNotMicroformat ∷ Traversal' Element Element
-entireNotMicroformat f e@(Element _ _ ns) = com <$> f e <*> traverse (_Element (notMicroformat $ entireNotMicroformat f)) ns
+entireNotMicroformat f e@(Element _ _ ns) = com <$> f e <*> traverse (_Element (entireNotMicroformat f)) (filter notMf ns)
   where com (Element n a _) = Element n a
+        notMf (NodeElement (Element _ a _)) = not $ (fromMaybe "" $ lookup "class" $ map unwrapName $ M.toList a) ≈ [re|h-\w+|]
+        notMf _ = True
+        unwrapName (Name n _ _, val) = (n, val)
 
 hasOneClass ∷ [String] → Traversal' Element Element
 hasOneClass ns = attributeSatisfies "class" $ \a → any (\x → T.isInfixOf (T.pack x) a) ns

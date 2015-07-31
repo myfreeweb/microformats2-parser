@@ -194,7 +194,7 @@ spec = do
             <a class="p-name u-url u-uid" href="https://youtu.be/E99FnoYqoII">Rails is Omakase</a>
             <span class="p-author h-card"><span class="p-name">DHH</span></span>
             <time class="dt-published">2013-01-25</time>
-            <p class="p-content">Rails is not that. Rails is omakase...</p>
+            <p class="e-content">Rails is not that. Rails is omakase...</p>
           </article>
         </div>|] `shouldBe` [ def { citeName = pure "Rails is Omakase"
                                   , citeUrl = pure "https://youtu.be/E99FnoYqoII"
@@ -216,7 +216,7 @@ spec = do
             <a href="http://david.heinemeierhansson.com" class="p-author">David</a>
             <time class="dt-published">2013-01-25</time>
             <time class="dt-updated">2013-01-25T01:23</time>
-            <p class="p-content">Rails is not that. Rails is omakase...</p>
+            <p class="e-content">Rails is not that. Rails is omakase...</p>
           </article>
         </div>|] `shouldBe` [ def { entryName = pure "Rails is Omakase"
                                   , entryUrl = pure "https://youtu.be/E99FnoYqoII"
@@ -231,7 +231,7 @@ spec = do
     it "supports different html content modes" $ do
       let src = [xml|<div>
           <article class="h-entry">
-            <p class="p-content"><script>alert('XSS')</script><a href="http://rubyonrails.org" onclick="alert()">Rails</a> is not that. Rails is omakase...</p>
+            <p class="e-content"><script>alert('XSS')</script><a href="http://rubyonrails.org" onclick="alert()">Rails</a> is not that. Rails is omakase...</p>
           </article>
         </div>|]
       parseEntry' Unsafe   src `shouldBe` [ def { entryContent = pure $ TextContent "<script>alert('XSS')</script><a href=\"http://rubyonrails.org\" onclick=\"alert()\">Rails</a> is not that. Rails is omakase..." } ]

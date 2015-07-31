@@ -10,6 +10,8 @@ The types are located in a separate package called [microformats2-types].
 [sweetroll]: https://github.com/myfreeweb/sweetroll
 [microformats2-types]: https://github.com/myfreeweb/microformats2-types
 
+## [DEMO PAGE](https://unrelenting.technology/mf2/)
+
 ## Usage
 
 ```haskell

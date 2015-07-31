@@ -166,7 +166,7 @@ extractEntry m e = def { entryName        = extractPropertyL P "name" e
                        , entryRepostOf    = UrlEntry <$> extractPropertyL U "repost-of" e }
 
 processContent ∷ HtmlContentMode → Element → [LT.Text]
-processContent Unsafe   = extractPropertyContent getAllHtml P "content"
-processContent Strip    = extractPropertyContent getAllText P "content"
-processContent Escape   = map (LT.replace "<" "&lt;" . LT.replace ">" "&gt;" . LT.replace "&" "&amp;") . extractPropertyContent getAllHtml P "content"
-processContent Sanitize = extractPropertyContent getAllHtmlSanitized P "content"
+processContent Unsafe   = extractPropertyContent getAllHtml E "content"
+processContent Strip    = extractPropertyContent getAllText E "content"
+processContent Escape   = map (LT.replace "<" "&lt;" . LT.replace ">" "&gt;" . LT.replace "&" "&amp;") . extractPropertyContent getAllHtml E "content"
+processContent Sanitize = extractPropertyContent getAllHtmlSanitized E "content"
