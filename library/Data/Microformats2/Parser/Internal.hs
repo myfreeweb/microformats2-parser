@@ -21,6 +21,7 @@ import           Text.Blaze
 import           Text.Blaze.Renderer.Text
 import           Text.Regex.PCRE.Heavy
 import           Safe (readMay)
+import           Debug.Trace
 
 if' ∷ Bool → Maybe a → Maybe a
 if' c x = if c then x else Nothing
@@ -29,7 +30,7 @@ unwrapName ∷ (Name, a) → (Text, a)
 unwrapName (Name n _ _, val) = (n, val)
 
 entireFiltered ∷ (Node → Bool) → Traversal' Element Element
-entireFiltered pr f e@(Element _ _ ns) = com <$> f e <*> traverse (_Element (entireNotMicroformat f)) (filter pr ns)
+entireFiltered pr f e@(Element _ _ ns) = com <$> f e <*> traverse (_Element $ entireFiltered pr f) (filter pr ns)
   where com (Element n a _) = Element n a
 
 notMicroformat ∷ Element → Bool
@@ -42,7 +43,17 @@ entireNotMicroformat = entireFiltered notMf
 
 entireNotClass ∷ Text → Traversal' Element Element
 entireNotClass c = entireFiltered notMf
-  where notMf (NodeElement (Element _ a _)) = not $ T.isInfixOf c $ fromMaybe "" $ lookup "class" $ map unwrapName $ M.toList a
+  where notMf (NodeElement (Element _ a _)) = notElem c $ T.splitOn " " $ fromMaybe "" $ lookup "class" $ map unwrapName $ M.toList a
+        notMf _ = True
+
+notProperty ∷ Element → Bool
+notProperty (Element _ a _) = not $ any isProperty $ T.splitOn " " $ fromMaybe "" $ lookup "class" $ map unwrapName $ M.toList a
+  where isProperty x = T.isPrefixOf "p-" x || T.isPrefixOf "u-" x || T.isPrefixOf "e-" x || T.isPrefixOf "dt-" x || T.isPrefixOf "h-" x
+notProperty _ = True
+
+entireNotProperty ∷ Traversal' Element Element
+entireNotProperty = entireFiltered notMf
+  where notMf (NodeElement e) = notProperty e
         notMf _ = True
 
 hasOneClass ∷ [String] → Traversal' Element Element
@@ -58,10 +69,12 @@ getOnlyChildren ∷ Element → [Element]
 getOnlyChildren e = if lengthOf plate e == 1 then e ^.. plate else []
 
 getOnlyChild ∷ Name → Element → Maybe Element
-getOnlyChild n e = if' (lengthOf plate e == 1) $ e ^? plate . el n
+getOnlyChild n e = if' (fromMaybe False $ notProperty <$> r) $ r
+  where r = if' (lengthOf plate e == 1) $ e ^? plate . el n
 
 getOnlyOfType ∷ Name → Element → Maybe Element
-getOnlyOfType n e = if' (lengthOf (plate . el n) e == 1) $ e ^? plate . el n
+getOnlyOfType n e = if' (fromMaybe False $ notProperty <$> r) $ r
+  where r = if' (lengthOf (plate . el n) e == 1) $ e ^? plate . el n
 
 els ∷ [Name] → Traversal' Element Element
 els ns f s = if elementName s `elem` ns then f s else pure s

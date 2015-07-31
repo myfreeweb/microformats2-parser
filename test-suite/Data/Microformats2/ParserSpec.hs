@@ -188,7 +188,7 @@ spec = do
       parseCard' [xml|<div>
           <section class="h-card">
             <p class="p-org h-card"> <span class="p-name">IndieWebCamp</span> </p>
-            <span class="p-org">Microformats</span>
+            <div><span class="p-org">Microformats</span></div>
           </section>
         </div>|] `shouldBe` [ def { cardOrg = [ TextCard "Microformats"
                                                 , (CardCard $ def { cardName = pure "IndieWebCamp" }) ] }
@@ -202,8 +202,8 @@ spec = do
           <article class="h-cite">
             <a class="p-name u-url u-uid" href="https://youtu.be/E99FnoYqoII">Rails is Omakase</a>
             <span class="p-author h-card"><span class="p-name">DHH</span></span>
-            <time class="dt-published">2013-01-25</time>
             <p class="e-content">Rails is not that. Rails is omakase...</p>
+            <footer><time class="dt-published">2013-01-25</time></footer>
           </article>
         </div>|] `shouldBe` [ def { citeName = pure "Rails is Omakase"
                                   , citeUrl = pure "https://youtu.be/E99FnoYqoII"
@@ -221,7 +221,7 @@ spec = do
           <article class="h-entry">
             <a class="p-name u-url u-uid" href="https://youtu.be/E99FnoYqoII">Rails is Omakase</a>
             <span class="p-author h-card"><span class="p-name">DHH</span></span>
-            <a href="http://david.heinemeierhansson.com" class="p-author h-card">DHH</a>
+            <div><div><a href="http://david.heinemeierhansson.com" class="p-author h-card">DHH</a></div></div>
             <a href="http://david.heinemeierhansson.com" class="p-author">David</a>
             <time class="dt-published">2013-01-25</time>
             <time class="dt-updated">2013-01-25T01:23</time>
@@ -269,7 +269,9 @@ spec = do
       (take 1 $ parseEntry' Strip [xml|<div>
           <article class="h-entry">
             <div class="p-comment h-cite">
-              <a class="p-name">Rails is Omakase</a>
+              <div>
+                <a class="p-name">Rails is Omakase</a>
+              </div>
               <!-- p-author h-card must not propagate to the h-entry's p-author! -->
               <a href="http://david.heinemeierhansson.com" class="p-author h-card">David</a>
               <time class="dt-published">2013-01-25</time>

@@ -95,3 +95,5 @@ spec = do
       ur [xml|<area class="h-blah" href="/hello/area">|] `shouldBe` pure "/hello/area"
       ur [xml|<div class="h-blah"><em>what</em><a href="/hello/n/a">|] `shouldBe` pure "/hello/n/a"
       ur [xml|<div class="h-blah"><em>what</em><area href="/hello/n/area">|] `shouldBe` pure "/hello/n/area"
+      ur [xml|<div class="h-blah"><div><a href="/nope"></div>|] `shouldBe` Nothing
+      ur [xml|<div class="h-blah"><a href="/nope" class="h-nope">n0pe</a>|] `shouldBe` Nothing

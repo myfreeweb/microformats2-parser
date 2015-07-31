@@ -19,14 +19,12 @@ import           Data.Microformats2.Parser.Internal
 import           Data.Default
 import           Data.Foldable (asum)
 import           Data.Maybe
-import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy as LB
 import           Text.HTML.DOM
 import           Text.XML.Lens
 import           Network.URI
 import           Safe (headMay)
-import           Debug.Trace
 
 data HtmlContentMode = Unsafe | Strip | Escape | Sanitize
 
@@ -194,7 +192,7 @@ parseReprEntryWithAuthor fetch m href = do
 discoverAuthor ∷ Monad μ ⇒ (URI → μ (Maybe LB.ByteString)) → Element → URI → Entry → μ (Maybe [CardReference])
 discoverAuthor fetch rootEl baseUri entry = do
   let fetchCard href = do
-        case parseURIReference $ TL.unpack href of
+        case parseURIReference $ TL.unpack $ TL.strip href of
           Nothing → return Nothing
           Just uri → do
             resp ← fetch $ uri `relativeTo` baseUri
