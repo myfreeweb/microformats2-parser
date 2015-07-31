@@ -13,13 +13,20 @@ module Data.Microformats2.Parser (
 import           Control.Applicative
 #endif
 import           Control.Monad
+import           Control.Monad.Trans.Maybe
 import           Data.Microformats2
 import           Data.Microformats2.Parser.Internal
 import           Data.Default
--- import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
+import           Data.Foldable (asum)
+import           Data.Maybe
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.ByteString.Lazy as LB
 import           Text.HTML.DOM
 import           Text.XML.Lens
+import           Network.URI
+import           Safe (headMay)
+import           Debug.Trace
 
 data HtmlContentMode = Unsafe | Strip | Escape | Sanitize
 
@@ -123,9 +130,7 @@ findCite = findMicroformat "h-cite"
 extractCite ∷ HtmlContentMode → Element → Cite
 extractCite m e = def { citeName        = extractPropertyL P "name" e
                       , citePublished   = extractPropertyDt "published" e
-                      , citeAuthor      = filter (/= CardCard def) $
-                                               (TextCard <$> extractPropertyL P "author" e)
-                                            ++ (CardCard . extractCard <$> findPropertyMicroformat e "p-author" "h-card")
+                      , citeAuthor      = extractAuthor e
                       , citeUrl         = extractPropertyL U "url" e
                       , citeUid         = extractPropertyL U "uid" e
                       , citePublication = extractPropertyL P "publication" e
@@ -148,9 +153,7 @@ extractEntry m e = def { entryName        = extractPropertyL P "name" e
                        , entryContent     = TextContent <$> processContent m e 
                        , entryPublished   = extractPropertyDt "published" e
                        , entryUpdated     = extractPropertyDt "updated" e
-                       , entryAuthor      = filter (/= CardCard def) $
-                                                (TextCard <$> extractPropertyL P "author" e)
-                                             ++ (CardCard . extractCard <$> findPropertyMicroformatNotNestedIn "p-comment" e "p-author" "h-card")
+                       , entryAuthor      = extractAuthor e
                        , entryCategory    = extractPropertyL P "category" e
                        , entryUrl         = extractPropertyL U "url" e
                        , entryUid         = extractPropertyL U "uid" e
@@ -166,8 +169,59 @@ extractEntry m e = def { entryName        = extractPropertyL P "name" e
                        , entryLikeOf      = UrlEntry <$> extractPropertyL U "like-of" e
                        , entryRepostOf    = UrlEntry <$> extractPropertyL U "repost-of" e }
 
-processContent ∷ HtmlContentMode → Element → [LT.Text]
+extractAuthor ∷ Element → [CardReference]
+extractAuthor e = filter (/= CardCard def) $
+                       (TextCard <$> extractPropertyL P "author" e)
+                    ++ (CardCard . extractCard <$> findPropertyMicroformatNotNestedIn "p-comment" e "p-author" "h-card")
+
+-- | Parses the representative h-entry on a URL, discovering its authorship <http://indiewebcamp.com/authorship>, using the HTTP fetcher function from arguments.
+parseReprEntryWithAuthor ∷ Monad μ ⇒ (URI → μ (Maybe LB.ByteString)) → HtmlContentMode → TL.Text → μ (Maybe Entry)
+parseReprEntryWithAuthor fetch m href = do
+  case parseURI $ TL.unpack href of
+    Nothing → return Nothing
+    Just uri → do
+      entryPage ← fetch uri
+      case entryPage of
+        Nothing → return Nothing
+        Just body → do
+          let rootEl = documentRoot $ parseLBS body
+          case headMay $ parseEntry m rootEl of
+            Nothing → return Nothing
+            Just reprEntry → do
+              discovered ← discoverAuthor fetch rootEl uri reprEntry
+              return $ Just $ reprEntry { entryAuthor = fromMaybe [] discovered }
+
+discoverAuthor ∷ Monad μ ⇒ (URI → μ (Maybe LB.ByteString)) → Element → URI → Entry → μ (Maybe [CardReference])
+discoverAuthor fetch rootEl baseUri entry = do
+  let fetchCard href = do
+        case parseURIReference $ TL.unpack href of
+          Nothing → return Nothing
+          Just uri → do
+            resp ← fetch $ uri `relativeTo` baseUri
+            case resp of
+              Nothing → return Nothing
+              Just body → return $ CardCard <$> (headMay $ parseCard $ documentRoot $ parseLBS body)
+      fetchAuthorIfUrl (TextCard url) = fetchCard url
+      fetchAuthorIfUrl c = return $ Just c
+      seqListMaybe = liftM (listToMaybeList . catMaybes) . sequence
+      processedOrigAuthors = seqListMaybe $ fetchAuthorIfUrl <$> entryAuthor entry
+      hFeedAuthorCard = do
+        -- TODO: check that the feed actually contains the entry // use processUrl
+        case rootEl ^? entire . hasClass "h-feed" of
+          Nothing → return Nothing
+          Just hFeedEl → seqListMaybe $ fetchAuthorIfUrl <$> extractAuthor hFeedEl
+      relAuthorCard = do
+        case rootEl ^. entire . hasRel "author" . attribute "href" of
+          Nothing → return Nothing
+          Just href → do
+            resp ← fetchCard $ TL.fromStrict href
+            case resp of
+              Nothing → return Nothing
+              Just card → return $ Just [card]
+  runMaybeT $ asum $ map MaybeT [ processedOrigAuthors, hFeedAuthorCard, relAuthorCard ]
+
+processContent ∷ HtmlContentMode → Element → [TL.Text]
 processContent Unsafe   = extractPropertyContent getAllHtml E "content"
 processContent Strip    = extractPropertyContent getAllText E "content"
-processContent Escape   = map (LT.replace "<" "&lt;" . LT.replace ">" "&gt;" . LT.replace "&" "&amp;") . extractPropertyContent getAllHtml E "content"
+processContent Escape   = map (TL.replace "<" "&lt;" . TL.replace ">" "&gt;" . TL.replace "&" "&amp;") . extractPropertyContent getAllHtml E "content"
 processContent Sanitize = extractPropertyContent getAllHtmlSanitized E "content"

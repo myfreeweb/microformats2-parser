@@ -32,9 +32,12 @@ entireFiltered ∷ (Node → Bool) → Traversal' Element Element
 entireFiltered pr f e@(Element _ _ ns) = com <$> f e <*> traverse (_Element (entireNotMicroformat f)) (filter pr ns)
   where com (Element n a _) = Element n a
 
+notMicroformat ∷ Element → Bool
+notMicroformat (Element _ a _) = not $ (fromMaybe "" $ lookup "class" $ map unwrapName $ M.toList a) ≈ [re|h-\w+|]
+
 entireNotMicroformat ∷ Traversal' Element Element
 entireNotMicroformat = entireFiltered notMf
-  where notMf (NodeElement (Element _ a _)) = not $ (fromMaybe "" $ lookup "class" $ map unwrapName $ M.toList a) ≈ [re|h-\w+|]
+  where notMf (NodeElement e) = notMicroformat e
         notMf _ = True
 
 entireNotClass ∷ Text → Traversal' Element Element
@@ -43,10 +46,13 @@ entireNotClass c = entireFiltered notMf
         notMf _ = True
 
 hasOneClass ∷ [String] → Traversal' Element Element
-hasOneClass ns = attributeSatisfies "class" $ \a → any (\x → T.isInfixOf (T.pack x) a) ns
+hasOneClass ns = attributeSatisfies "class" $ \a → any (\x → (T.pack x) `elem` (T.splitOn " " a)) ns
 
-hasClass ∷ String →  Traversal' Element Element
-hasClass n = attributeSatisfies "class" $ T.isInfixOf . T.pack $ n
+hasClass ∷ String → Traversal' Element Element
+hasClass n = attributeSatisfies "class" $ \a → (T.pack n) `elem` (T.splitOn " " a)
+
+hasRel ∷ String → Traversal' Element Element
+hasRel n = attributeSatisfies "rel" $ \a → (T.pack n) `elem` (T.splitOn " " a)
 
 getOnlyChildren ∷ Element → [Element]
 getOnlyChildren e = if lengthOf plate e == 1 then e ^.. plate else []
@@ -101,16 +107,19 @@ _InnerText ∷ Prism' Node Text
 _InnerText = prism' NodeContent $ \s → case s of
   NodeContent c → Just $ removeWhitespace c
   NodeElement e → if nameLocalName (elementName e) == "img"
-                       then e ^. el "img" . attribute "alt"
-                       else Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+                    then e ^. el "img" . attribute "alt"
+                    else if notMicroformat e
+                      then Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+                      else Nothing
   _ → Nothing
 
 getAllText ∷ Element → Maybe Text
-getAllText = getPrism _InnerText
+getAllText e = if txt == Just "" then Nothing else txt
+  where txt = getPrism _InnerText e
 
 getText ∷ Element → Maybe Text
-getText e = if T.null $ fromMaybe "" txt then Nothing else txt
-  where txt = listToMaybe $ T.strip <$> e ^.. entire . nodes . traverse . _Content
+getText e = if txt == Just "" then Nothing else txt
+  where txt = listToMaybe $ T.strip <$> e ^.. entireNotMicroformat . nodes . traverse . _Content
 
 getAbbrTitle ∷ Element → Maybe Text
 getAbbrTitle e = e ^. el "abbr" . attribute "title"
@@ -233,3 +242,9 @@ implyProperty U "photo" e = asum $ [ getImgSrc, getObjectData
                                    ] <*> pure e
 implyProperty U "url"   e = asum $ [ getAAreaHref, getOnlyOfTypeAAreaHref ] <*> pure e
 implyProperty _ _ _ = Nothing
+
+listToMaybeList ∷ [α] → Maybe [α]
+listToMaybeList l = if null l then Nothing else Just l
+
+processUrl ∷ TL.Text → TL.Text
+processUrl = TL.intercalate "" . take 1 . TL.splitOn "?" . TL.strip

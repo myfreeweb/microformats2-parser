@@ -4,16 +4,25 @@ module Data.Microformats2.ParserSpec (spec) where
 
 import           Test.Hspec
 import           TestCommon
+import           Control.Monad.Identity
 import           Data.Default
+import           Data.String
+import           Data.Maybe
 import           Data.Time.Clock
 import           Data.Time.Calendar
 import           Data.Microformats2
 import           Data.Microformats2.Parser
+import qualified Data.Text.Lazy as TL
+import qualified Data.ByteString.Lazy as LB
+import           Network.URI
 #if __GLASGOW_HASKELL__ < 709
 import           Control.Applicative
 #endif
 
 {-# ANN module ("HLint: ignore Redundant do"::String) #-}
+
+instance IsString URI where
+  fromString = fromJust . parseURI
 
 spec ∷ Spec
 spec = do
@@ -278,4 +287,23 @@ spec = do
                                                                        , citePublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) }
                                                      , EntryEntry $ def { entryName = pure "Rails is Omakase"
                                                                         , entryContent = pure $ TextContent "Rails is not that. Rails is omakase..."
-                                                                        , entryPublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) }                                                                      ] } ]
+                                                                        , entryPublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) } ] } ]
+
+  describe "parseReprEntryWithAuthor" $ do
+    let mockFetch ∷ URI → Identity (Maybe LB.ByteString)
+        mockFetch "http://direct" = return $ Just [xml|<body><div class="h-entry"> <div class="p-author h-card"><h1 class="p-name">Author from Direct!|]
+        mockFetch "http://link" = return $ Just [xml|<body><div class="h-entry"> <a class="p-author">http://author/page</a>|]
+        mockFetch "http://rel" = return $ Just [xml|<body> <a href="http://author/page" rel="author"></a><div class="h-entry">|]
+        mockFetch "http://author/page/link-relative" = return $ Just [xml|<body><div class="h-entry"> <a class="p-author">/page</a>|]
+        mockFetch "http://feed" = return $ Just [xml|<body><div class="h-feed"> <div class="p-author h-card"><h1 class="p-name">Author from Feed!</h1></div><div class="h-entry">|]
+        mockFetch "http://feed/link" = return $ Just [xml|<body><div class="h-feed"> <a class="p-author">http://author/page</div><div class="h-entry">|]
+        mockFetch "http://author/page" = return $ Just [xml|<body><div class="h-card"><h1 class="p-name">Author from Page!|]
+        mockFetch _ = return Nothing
+        parseWithAuthor = parseReprEntryWithAuthor mockFetch Unsafe
+
+    it "parses author" $ parseWithAuthor "http://direct" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Direct!" } ] })
+    it "parses author-link" $ parseWithAuthor "http://link" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })
+    it "parses rel" $ parseWithAuthor "http://rel" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })
+    it "parses relative author-link" $ parseWithAuthor "http://author/page/link-relative" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })
+    it "parses h-feed author" $ parseWithAuthor "http://feed" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Feed!" } ] })
+    it "parses h-feed author-link" $ parseWithAuthor "http://feed/link" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })

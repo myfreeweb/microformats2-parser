@@ -22,7 +22,9 @@ source-repository head
 library
     build-depends:
         base >= 4.0.0.0 && < 5
+      , transformers
       , text
+      , bytestring
       , time
       , either
       , safe
@@ -31,6 +33,7 @@ library
       , microformats2-types
       , html-conduit
       , xml-lens
+      , network-uri
       , blaze-markup
       , xss-sanitize
       , pcre-heavy
@@ -65,6 +68,7 @@ executable microformats2-parser
 test-suite tests
     build-depends:
         base >= 4.0.0.0 && < 5
+      , mtl
       , time
       , hspec
       , template-haskell
