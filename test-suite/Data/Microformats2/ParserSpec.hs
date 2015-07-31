@@ -255,3 +255,27 @@ spec = do
         </div>|] `shouldBe` [ def { entryLocation = [ CardLoc $ def { cardName = pure "Pen Island", cardUrl = pure "http://penisland.net" }
                                                     , AdrLoc $ def { adrCountryName = pure "USA" }
                                                     , GeoLoc $ def { geoLatitude = pure 123.45 } ] } ]
+
+    it "parses p-comment" $ do
+      (take 1 $ parseEntry' Strip [xml|<div>
+          <article class="h-entry">
+            <div class="p-comment h-cite">
+              <a class="p-name">Rails is Omakase</a>
+              <!-- p-author h-card must not propagate to the h-entry's p-author! -->
+              <a href="http://david.heinemeierhansson.com" class="p-author h-card">David</a>
+              <time class="dt-published">2013-01-25</time>
+              <p class="e-content">Rails is not that. Rails is omakase...</p>
+            </div>
+            <div class="p-comment h-entry">
+              <a class="p-name">Rails is Omakase</a>
+              <time class="dt-published">2013-01-25</time>
+              <p class="e-content">Rails is not that. Rails is omakase...</p>
+            </div>
+          </article>
+        </div>|]) `shouldBe` [ def { entryComments = [ CiteEntry $ def { citeName = pure "Rails is Omakase"
+                                                                       , citeAuthor = [ CardCard $ def { cardName = pure "David", cardUrl = pure "http://david.heinemeierhansson.com" } ]
+                                                                       , citeContent = pure $ TextContent "Rails is not that. Rails is omakase..."
+                                                                       , citePublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) }
+                                                     , EntryEntry $ def { entryName = pure "Rails is Omakase"
+                                                                        , entryContent = pure $ TextContent "Rails is not that. Rails is omakase..."
+                                                                        , entryPublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) }                                                                      ] } ]

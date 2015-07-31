@@ -150,16 +150,17 @@ extractEntry m e = def { entryName        = extractPropertyL P "name" e
                        , entryUpdated     = extractPropertyDt "updated" e
                        , entryAuthor      = filter (/= CardCard def) $
                                                 (TextCard <$> extractPropertyL P "author" e)
-                                             ++ (CardCard . extractCard <$> findPropertyMicroformat e "p-author" "h-card")
+                                             ++ (CardCard . extractCard <$> findPropertyMicroformatNotNestedIn "p-comment" e "p-author" "h-card")
                        , entryCategory    = extractPropertyL P "category" e
                        , entryUrl         = extractPropertyL U "url" e
                        , entryUid         = extractPropertyL U "uid" e
                        , entryLocation    = filter ((/= CardLoc def) .&&. (/= AdrLoc def) .&&. (/= GeoLoc def)) $
-                                                 (CardLoc . extractCard <$> findPropertyMicroformat e "p-location" "h-card")
-                                              ++ (AdrLoc  . extractAdr <$> findPropertyMicroformat e "p-location" "h-adr")
-                                              ++ (GeoLoc  . extractGeo <$> findPropertyMicroformat e "p-location" "h-geo")
+                                                 (CardLoc . extractCard <$> findPropertyMicroformatNotNestedIn "p-comment" e "p-location" "h-card")
+                                              ++ (AdrLoc  . extractAdr  <$> findPropertyMicroformatNotNestedIn "p-comment" e "p-location" "h-adr")
+                                              ++ (GeoLoc  . extractGeo  <$> findPropertyMicroformatNotNestedIn "p-comment" e "p-location" "h-geo")
                        , entryComments    = filter (/= CiteEntry def) $
-                                             (CiteEntry . extractCite m <$> findPropertyMicroformat e "p-comment" "h-cite")
+                                                (CiteEntry . extractCite m <$> findPropertyMicroformat e "p-comment" "h-cite")
+                                             ++ (EntryEntry . extractEntry m <$> findPropertyMicroformat e "p-comment" "h-entry")
                        , entrySyndication = extractPropertyL U "syndication" e
                        , entryInReplyTo   = UrlEntry <$> extractPropertyL U "in-reply-to" e
                        , entryLikeOf      = UrlEntry <$> extractPropertyL U "like-of" e
