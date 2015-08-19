@@ -30,7 +30,6 @@ library
       , safe
       , containers
       , data-default
-      , microformats2-types
       , html-conduit
       , xml-lens
       , network-uri
@@ -40,7 +39,7 @@ library
     default-language: Haskell2010
     exposed-modules:
         Data.Microformats2.Parser
-        Data.Microformats2.Parser.Internal
+        Data.Microformats2.Parser.Property
         Data.Microformats2.Parser.HtmlUtil
         Data.Microformats2.Parser.Util
     ghc-options: -Wall
@@ -60,7 +59,6 @@ executable microformats2-parser
       , blaze-html
       , blaze-markup
       , microformats2-parser
-      , microformats2-types
     default-language: Haskell2010
     ghc-prof-options: -auto-all -prof
     ghc-options: -threaded -rtsopts -with-rtsopts=-N
@@ -78,7 +76,6 @@ test-suite tests
       , hspec
       , template-haskell
       , microformats2-parser
-      , microformats2-types
       , raw-strings-qq
       , data-default
       , html-conduit
@@ -89,5 +86,6 @@ test-suite tests
     main-is: Spec.hs
     other-modules:
         Data.Microformats2.ParserSpec
-        Data.Microformats2.Parser.InternalSpec
+        Data.Microformats2.Parser.PropertySpec
+        Data.Microformats2.Parser.HtmlUtilSpec
     type: exitcode-stdio-1.0

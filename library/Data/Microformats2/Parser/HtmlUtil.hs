@@ -2,10 +2,12 @@
 {-# LANGUAGE CPP, RankNTypes #-}
 
 module Data.Microformats2.Parser.HtmlUtil (
-  getInnerHtml
+  HtmlContentMode (..)
+, getInnerHtml
 , getInnerHtmlSanitized
 , getInnerTextRaw
 , getInnerTextWithImgs
+, getProcessedInnerHtml
 ) where
 
 #if __GLASGOW_HASKELL__ < 709
@@ -71,3 +73,11 @@ getInnerTextRaw e = unless' (txt == Just "") txt
 getInnerTextWithImgs ∷ Element → Maybe Text
 getInnerTextWithImgs e = unless' (txt == Just "") txt
   where txt = getPrism _InnerTextWithImgs e
+
+data HtmlContentMode = Unsafe | Strip | Escape | Sanitize
+
+getProcessedInnerHtml ∷ HtmlContentMode → Element → Maybe Text
+getProcessedInnerHtml Unsafe   e = getInnerHtml e
+getProcessedInnerHtml Strip    e = getInnerTextRaw e
+getProcessedInnerHtml Escape   e = (T.replace "<" "&lt;" . T.replace ">" "&gt;" . T.replace "&" "&amp;") <$> getInnerHtml e
+getProcessedInnerHtml Sanitize e = getInnerHtmlSanitized e
