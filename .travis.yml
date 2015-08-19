@@ -19,6 +19,3 @@ before_install:
 
 script:
   - stack --no-terminal --skip-ghc-check test
-
-after_script:
-  - stack exec hpc-coveralls -- --exclude-dir=test-suite --exclude-dir=benchmark --exclude-dir=executable tests
