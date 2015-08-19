@@ -11,15 +11,24 @@ Originally created for [sweetroll] :-)
 
 ## Usage
 
+Look at the API docs [on Hackage](https://hackage.haskell.org/package/microformats2-parser) for more info, here's a quick overview:
+
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
+
 import Data.Microformats2.Parser
 import Data.Default
 
 parseMf2 def $ documentRoot $ parseLBS "<body><p class=h-entry><h1 class=p-name>Yay!</h1></p></body>"
 ```
 
-Look at the API docs [on Hackage](https://hackage.haskell.org/package/microformats2-parser) for more info.
+The `def` is the [default](https://hackage.haskell.org/package/data-default-class-0.0.1/docs/Data-Default-Class.html) configuration.
+
+The configuration includes:
+- `htmlMode`, an HTML parsing mode (`Unsafe` | `Escape` | **`Sanitize`**)
+
+`parseMf2` will return an Aeson [Value](https://hackage.haskell.org/package/aeson-0.8.0.2/docs/Data-Aeson-Types.html#t:Value) structured like [canonical microformats2 JSON](http://microformats.org/wiki/microformats2).
+[lens-aeson](https://hackage.haskell.org/package/lens-aeson) is a good way to navigate it.
 
 ## Development
 
