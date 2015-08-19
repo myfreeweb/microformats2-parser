@@ -220,6 +220,6 @@ discoverAuthor fetch rootEl baseUri entry = do
 
 processContent ∷ HtmlContentMode → Element → [TL.Text]
 processContent Unsafe   = extractPropertyContent getAllHtml E "content"
-processContent Strip    = extractPropertyContent getAllText E "content"
+processContent Strip    = extractPropertyContent getInnerTextRaw E "content"
 processContent Escape   = map (TL.replace "<" "&lt;" . TL.replace ">" "&gt;" . TL.replace "&" "&amp;") . extractPropertyContent getAllHtml E "content"
 processContent Sanitize = extractPropertyContent getAllHtmlSanitized E "content"

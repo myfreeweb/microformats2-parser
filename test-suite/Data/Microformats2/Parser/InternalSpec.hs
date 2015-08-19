@@ -15,6 +15,18 @@ import           Control.Applicative
 
 spec ∷ Spec
 spec = do
+  describe "getInnerTextRaw" $ do
+    it "returns textContent without handling imgs" $ do
+      let txtraw = getInnerTextRaw . documentRoot . parseLBS
+      txtraw [xml|<div>This is <a href="">text content</a> <img src="/yo" alt="NOPE"> without any stuff.
+  	</div>|] `shouldBe` Just "This is text content  without any stuff."
+
+  describe "getInnerTextWithImgs" $ do
+    it "returns textContent with handling imgs" $ do
+      let txtraw = getInnerTextWithImgs . documentRoot . parseLBS
+      txtraw [xml|<div>This is <a href="">text content</a> <img src="/yo" alt="with an alt"> <img src="and-src">.
+    </div>|] `shouldBe` Just "This is text content with an alt and-src."
+
   describe "extractProperty" $ do
     it "parses p- properties" $ do
       let nm = extractProperty P "name" . documentRoot . parseLBS
@@ -29,8 +41,9 @@ spec = do
       nm [xml|<div><span class="p-name"> ignore <i class="value">Hello</i>  <img class="value" alt="ValuePattern" src="x.png"> </span>|] `shouldBe` pure "HelloValuePattern"
       nm [xml|<div><span class="p-name"> ignore <em class="value-title" title="Hello">Hi</em>  <span class="value">Value-Title</span></span>|] `shouldBe` pure "HelloValue-Title"
       nm [xml|<div><span class="p-name">  Hello <img alt="Span With Img" src="x.png"> </span>|] `shouldBe` pure "Hello Span With Img"
+      nm [xml|<div><span class="p-name">	Hello <img src="span-with.png"> </span>|] `shouldBe` pure "Hello span-with.png"
       nm [xml|<div><span class="p-name"> <span class="value"> 	Hello 	
-  <img alt="Span With Img" src="x.png"> </span> 	<em class="value-title" title="&& Value Title">nope</em> </span>|] `shouldBe` pure "Hello Span With Img&& Value Title"
+  <img alt="Span With Img" src="x.png"> </span> 	<em class="value-title" title="&& Value Title">nope</em> </span>|] `shouldBe` pure "Hello&& Value Title"
 
     it "parses u- properties" $ do
       let ur = extractProperty U "url" . documentRoot . parseLBS

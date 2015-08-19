@@ -122,77 +122,6 @@ spec = do
                                   , cardName = pure "Joe Bloggs" }
                             , def { cardPhoto = pure "http://example.org/photo.jpg" }]
 
-    it "parses p-adr" $ do
-      parseCard' [xml|<div>
-          <section class="h-card">
-            <p class="p-adr h-adr">
-              <span class="p-street-address">17</span>
-              <span class="p-locality">Reykjavik</span>
-              <span class="p-country-name">Iceland</span>
-            </p>
-          </section>
-        </div>|] `shouldBe` [ def { cardAdr = pure (AdrAdr $ def { adrStreetAddress = pure "17"
-                                                                 , adrLocality = pure "Reykjavik"
-                                                                 , adrCountryName = pure "Iceland" }) } ]
-
-    it "ignores nested h-adr not marked as p-adr" $ do
-      parseCard' [xml|<div>
-          <section class="h-card">
-            <p class="h-adr"> <span class="p-country-name">Iceland</span> </p>
-          </section>
-        </div>|] `shouldBe` [ def ]
-
-    it "parses adr and geo properties into p-adr" $ do
-      parseCard' [xml|<div>
-          <p class="h-card">
-            <span class="p-street-address">17</span>
-            <span class="p-locality">Reykjavik</span>
-            <span class="p-country-name">Iceland</span>
-            <span class="p-longitude">-122.03016</span>
-          </p>
-        </div>|] `shouldBe` [ def { cardAdr = pure (AdrAdr $ def { adrStreetAddress = pure "17"
-                                                                 , adrLocality = pure "Reykjavik"
-                                                                 , adrCountryName = pure "Iceland"
-                                                                 , adrGeo = [ GeoGeo $ def { geoLongitude = pure (-122.03016) } ] }) } ]
-
-    it "parses h-geo into p-adr" $ do
-      parseCard' [xml|<div>
-          <section class="h-card">
-            <p class="p-geo h-geo"> <span class="p-longitude">-122.03016</span> </p>
-          </section>
-        </div>|] `shouldBe` [ def { cardAdr = pure (AdrAdr $ def { adrGeo = [ GeoGeo $ def { geoLongitude = pure (-122.03016) } ] }) } ]
-
-    it "ignores nested h-geo not marked as p-geo" $ do
-      parseCard' [xml|<div>
-          <section class="h-card">
-            <p class="h-geo"> <span class="p-longitude">-122.03016</span> </p>
-          </section>
-        </div>|] `shouldBe` [ def ]
-
-    it "parses multiple things into p-adr" $ do
-      parseCard' [xml|<div>
-          <section class="h-card">
-            <p class="p-geo h-geo"> <span class="p-longitude">-122.03016</span> </p>
-            <span class="p-altitude">-122.03016</span>
-            <span class="p-country-name">Iceland</span>
-            <p class="p-adr h-adr"> <span class="p-locality">Reykjavik</span> </p>
-          </section>
-        </div>|] `shouldBe` [ def { cardAdr = [
-                                      (AdrAdr $ def { adrCountryName = pure "Iceland" 
-                                                    , adrGeo = [ GeoGeo $ def { geoAltitude = pure (-122.03016) }
-                                                               , GeoGeo $ def { geoLongitude = pure (-122.03016) } ] })
-                                    , (AdrAdr $ def { adrLocality = pure "Reykjavik" }) ]} ]
-
-
-    it "parses p-org" $ do
-      parseCard' [xml|<div>
-          <section class="h-card">
-            <p class="p-org h-card"> <span class="p-name">IndieWebCamp</span> </p>
-            <div><span class="p-org">Microformats</span></div>
-          </section>
-        </div>|] `shouldBe` [ def { cardOrg = [ TextCard "Microformats"
-                                                , (CardCard $ def { cardName = pure "IndieWebCamp" }) ] }
-                            , def { cardName = pure "IndieWebCamp" }]
 
   describe "parseCite" $ do
     let parseCite' = parseCite Strip . documentRoot . parseLBS
@@ -240,17 +169,19 @@ spec = do
     it "supports different html content modes" $ do
       let src = [xml|<div>
           <article class="h-entry">
+            <h1 class="p-name">Rails</h1>
             <p class="e-content"><script>alert('XSS')</script><a href="http://rubyonrails.org" onclick="alert()">Rails</a> is not that. Rails is omakase...</p>
           </article>
         </div>|]
-      parseEntry' Unsafe   src `shouldBe` [ def { entryContent = pure $ TextContent "<script>alert('XSS')</script><a href=\"http://rubyonrails.org\" onclick=\"alert()\">Rails</a> is not that. Rails is omakase..." } ]
-      parseEntry' Strip    src `shouldBe` [ def { entryContent = pure $ TextContent "alert('XSS')Rails is not that. Rails is omakase..." } ]
-      parseEntry' Escape   src `shouldBe` [ def { entryContent = pure $ TextContent "&lt;script&gt;alert('XSS')&lt;/script&gt;&lt;a href=\"http://rubyonrails.org\" onclick=\"alert()\"&gt;Rails&lt;/a&gt; is not that. Rails is omakase..." } ]
-      parseEntry' Sanitize src `shouldBe` [ def { entryContent = pure $ TextContent "<a href=\"http://rubyonrails.org\">Rails</a> is not that. Rails is omakase..." } ]
+      parseEntry' Unsafe   src `shouldBe` [ def { entryName = pure "Rails", entryContent = pure $ TextContent "<script>alert('XSS')</script><a href=\"http://rubyonrails.org\" onclick=\"alert()\">Rails</a> is not that. Rails is omakase..." } ]
+      parseEntry' Strip    src `shouldBe` [ def { entryName = pure "Rails", entryContent = pure $ TextContent "alert('XSS')Rails is not that. Rails is omakase..." } ]
+      parseEntry' Escape   src `shouldBe` [ def { entryName = pure "Rails", entryContent = pure $ TextContent "&lt;script&gt;alert('XSS')&lt;/script&gt;&lt;a href=\"http://rubyonrails.org\" onclick=\"alert()\"&gt;Rails&lt;/a&gt; is not that. Rails is omakase..." } ]
+      parseEntry' Sanitize src `shouldBe` [ def { entryName = pure "Rails", entryContent = pure $ TextContent "<a href=\"http://rubyonrails.org\">Rails</a> is not that. Rails is omakase..." } ]
 
     it "parses p-location" $ do
       parseEntry' Strip [xml|<div>
           <article class="h-entry">
+          <a class="p-name">Rails</a>
             <p class="p-location h-card">
               <a class="p-name u-url" href="http://penisland.net">Pen Island</a>
             </p>
@@ -261,13 +192,15 @@ spec = do
               <data class="p-latitude" value="123.45">
             </p>
           </article>
-        </div>|] `shouldBe` [ def { entryLocation = [ CardLoc $ def { cardName = pure "Pen Island", cardUrl = pure "http://penisland.net" }
+        </div>|] `shouldBe` [ def { entryName = pure "Rails"
+                                  , entryLocation = [ CardLoc $ def { cardName = pure "Pen Island", cardUrl = pure "http://penisland.net" }
                                                     , AdrLoc $ def { adrCountryName = pure "USA" }
                                                     , GeoLoc $ def { geoLatitude = pure 123.45 } ] } ]
 
     it "parses p-comment" $ do
       (take 1 $ parseEntry' Strip [xml|<div>
           <article class="h-entry">
+            <a class="p-name">Rails</a>
             <div class="p-comment h-cite">
               <div>
                 <a class="p-name">Rails is Omakase</a>
@@ -283,7 +216,8 @@ spec = do
               <p class="e-content">Rails is not that. Rails is omakase...</p>
             </div>
           </article>
-        </div>|]) `shouldBe` [ def { entryComments = [ CiteEntry $ def { citeName = pure "Rails is Omakase"
+        </div>|]) `shouldBe` [ def { entryName = pure "Rails"
+                                   , entryComments = [ CiteEntry $ def { citeName = pure "Rails is Omakase"
                                                                        , citeAuthor = [ CardCard $ def { cardName = pure "David", cardUrl = pure "http://david.heinemeierhansson.com" } ]
                                                                        , citeContent = pure $ TextContent "Rails is not that. Rails is omakase..."
                                                                        , citePublished = pure $ UTCTime (fromGregorian 2013 1 25) (secondsToDiffTime 0) }
@@ -303,9 +237,9 @@ spec = do
         mockFetch _ = return Nothing
         parseWithAuthor = parseReprEntryWithAuthor mockFetch Unsafe
 
-    it "parses author" $ parseWithAuthor "http://direct" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Direct!" } ] })
-    it "parses author-link" $ parseWithAuthor "http://link" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })
+    it "parses author" $ parseWithAuthor "http://direct" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Direct!" } ], entryName = pure "Author from Direct!" })
+    it "parses author-link" $ parseWithAuthor "http://link" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ], entryName = pure "http://author/page" })
     it "parses rel" $ parseWithAuthor "http://rel" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })
-    it "parses relative author-link" $ parseWithAuthor "http://author/page/link-relative" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })
+    it "parses relative author-link" $ parseWithAuthor "http://author/page/link-relative" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ], entryName = pure "/page" })
     it "parses h-feed author" $ parseWithAuthor "http://feed" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Feed!" } ] })
     it "parses h-feed author-link" $ parseWithAuthor "http://feed/link" `shouldBe` (Identity $ Just $ def { entryAuthor = [ CardCard $ def { cardName = pure "Author from Page!" } ] })

@@ -107,22 +107,27 @@ _InnerHtmlSanitized = prism' NodeContent $ \s → case s of
 getAllHtmlSanitized ∷ Element → Maybe Text
 getAllHtmlSanitized = getPrism _InnerHtmlSanitized
 
-_InnerText ∷ Prism' Node Text
-_InnerText = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
-  NodeElement e → if nameLocalName (elementName e) == "img"
-                    then e ^. el "img" . attribute "alt"
-                    else if' (notMicroformat e) $
-                      Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+_InnerTextRaw ∷ Prism' Node Text
+_InnerTextRaw = prism' NodeContent $ \s → case s of
+  NodeContent c → Just . removeWhitespace $ c
+  NodeElement e → Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
   _ → Nothing
 
-getAllText ∷ Element → Maybe Text
-getAllText e = unless' (txt == Just "") txt
-  where txt = getPrism _InnerText e
+_InnerTextWithImgs ∷ Prism' Node Text
+_InnerTextWithImgs = prism' NodeContent $ \s → case s of
+  NodeContent c → Just $ removeWhitespace c
+  NodeElement e → if nameLocalName (elementName e) == "img"
+                    then asum [ getImgAreaAlt e, getImgSrc e ]
+                    else Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+  _ → Nothing
 
-getText ∷ Element → Maybe Text
-getText e = unless' (txt == Just "") txt
-  where txt = listToMaybe $ T.strip <$> e ^.. entireNotMicroformat . nodes . traverse . _Content
+getInnerTextRaw ∷ Element → Maybe Text
+getInnerTextRaw e = unless' (txt == Just "") txt
+  where txt = getPrism _InnerTextRaw e
+
+getInnerTextWithImgs ∷ Element → Maybe Text
+getInnerTextWithImgs e = unless' (txt == Just "") txt
+  where txt = getPrism _InnerTextWithImgs e
 
 getAbbrTitle ∷ Element → Maybe Text
 getAbbrTitle e = e ^. el "abbr" . attribute "title"
@@ -164,7 +169,7 @@ getOnlyOfTypeAAreaHref ∷ Element → Maybe Text
 getOnlyOfTypeAAreaHref e = (^. attribute "href") =<< asum (getOnlyOfType <$> [ "a", "area" ] <*> pure e)
 
 extractValue ∷ Element → Maybe Text
-extractValue e = asum $ [ getAbbrTitle, getDataInputValue, getImgAreaAlt, getAllText ] <*> pure e
+extractValue e = asum $ [ getAbbrTitle, getDataInputValue, getImgAreaAlt, getInnerTextRaw ] <*> pure e
 
 extractValueTitle ∷ Element → Maybe Text
 extractValueTitle e = if' (isJust $ e ^? hasClass "value-title") $ e ^. attribute "title"
@@ -200,15 +205,15 @@ extractProperty ∷ PropType → String → Element → [Text]
 extractProperty P n e' =
   findProperty e' (className P n) >>=
   firstJustOf [ extractValueClassPattern [extractValueTitle, extractValue]
-              , extractValue ]
+              , getAbbrTitle, getDataInputValue, getImgAreaAlt, getInnerTextWithImgs ]
 extractProperty U n e' =
   findProperty e' (className U n) >>=
   firstJustOf [ getAAreaHref, getImgAudioVideoSourceSrc
               , extractValueClassPattern [extractValueTitle, extractValue]
-              , getAbbrTitle, getDataInputValue, getAllText ]
+              , getAbbrTitle, getDataInputValue, getInnerTextRaw ]
 extractProperty Dt n e' =
   findProperty e' (className Dt n) >>=
-  firstJustOf (extractValueClassPattern ms : ms ++ [getAllText])
+  firstJustOf (extractValueClassPattern ms : ms ++ [getInnerTextRaw])
   where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]
 extractProperty E n e' = findProperty e' (className E n) >>= liftM maybeToList getAllHtml
 
@@ -229,7 +234,7 @@ extractPropertyDt n e = catMaybes $ readISO <$> T.unpack <$> extractProperty Dt 
                                      , parseTimeD "%G-W%V"
                                      , isoParse Nothing ]
         isoParse = parseTimeD . iso8601DateFormat
-        parseTimeD = parseTimeM True defaultTimeLocale 
+        parseTimeD = parseTimeM True defaultTimeLocale
 
 extractPropertyContent ∷ (Element → Maybe Text) → PropType → String → Element → [TL.Text]
 extractPropertyContent ex t n e = findProperty e (className t n) >>= firstJustOf [ ex ] >>= return . TL.fromStrict
@@ -238,7 +243,7 @@ implyProperty ∷ PropType → String → Element → Maybe Text
 implyProperty P "name"  e = asum $ [ getImgAreaAlt, getAbbrTitle
                                    , getOnlyChildImgAreaAlt, getOnlyChildAbbrTitle
                                    , \e' -> asum $ [ getOnlyChildImgAreaAlt, getOnlyChildAbbrTitle ] <*> getOnlyChildren e'
-                                   , getText ] <*> pure e
+                                   , getInnerTextRaw ] <*> pure e
 implyProperty U "photo" e = asum $ [ getImgSrc, getObjectData
                                    , getOnlyOfTypeImgSrc, getOnlyOfTypeObjectData
                                    , \e' -> asum $ [ getOnlyOfTypeImgSrc, getOnlyOfTypeObjectData ] <*> getOnlyChildren e'
