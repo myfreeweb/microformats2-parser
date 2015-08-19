@@ -7,6 +7,8 @@ import           Control.Exception
 import           Data.Microformats2.Parser
 import           Data.List
 import           Data.Maybe (fromMaybe)
+import           Data.Aeson.Encode.Pretty
+import           Data.Default
 import qualified Data.Text.Lazy as TL
 import           Data.Streaming.Network (bindPath)
 import qualified Data.Stringable as S
@@ -45,7 +47,7 @@ homePage v result = docTypeHtml $ do
     p "This is a test page for the Microformats 2 Haskell parser."
     p "Note:"
     ul $ do
-      li "this demo page uses the Sanitize mode for e-content in h-cite and h-entry"
+      li "this demo page uses the Sanitize mode for e-*"
     H.form ! method "post" ! action "" $ do
       textarea ! name "html" $ toHtml v
       button "Parse!"
@@ -59,16 +61,8 @@ display = pre . toHtml . S.toLazyText . show
 parseResult ∷ TL.Text → Html
 parseResult h = section $ do
   let root = documentRoot $ parseLBS $ S.toLazyByteString h
-  h2 "h-geo"
-  display $ parseGeo root
-  h2 "h-adr"
-  display $ parseAdr root
-  h2 "h-card"
-  display $ parseCard root
-  h2 "h-cite"
-  display $ parseCite Sanitize root
-  h2 "h-entry"
-  display $ parseEntry Sanitize root
+  h2 "JSON result"
+  display $ encodePretty $ parseMf2 def root
 
 app = scottyApp $ do
   matchAny "/" $ do

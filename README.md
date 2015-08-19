@@ -14,8 +14,9 @@ Originally created for [sweetroll] :-)
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
 import Data.Microformats2.Parser
+import Data.Default
 
-parseEntry Sanitize $ documentRoot $ parseLBS "<body><p class=h-entry><h1 class=p-name>Yay!</h1></p></body>"
+parseMf2 def $ documentRoot $ parseLBS "<body><p class=h-entry><h1 class=p-name>Yay!</h1></p></body>"
 ```
 
 Look at the API docs [on Hackage](https://hackage.haskell.org/package/microformats2-parser) for more info.

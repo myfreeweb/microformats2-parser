@@ -30,7 +30,7 @@ getPrism t e = Just . T.strip <$> T.concat $ e ^.. nodes . traverse . t
 
 _InnerHtml ∷ Prism' Node Text
 _InnerHtml = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
+  NodeContent c → Just $ collapseWhitespace c
   NodeElement e → Just . TL.toStrict . renderMarkup . toMarkup $ e
   _ → Nothing
 
@@ -44,7 +44,7 @@ sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe m
 
 _InnerHtmlSanitized ∷ Prism' Node Text
 _InnerHtmlSanitized = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
+  NodeContent c → Just $ collapseWhitespace c
   NodeElement e → if' (safeTagName $ nameLocalName (elementName e)) $
                     Just . TL.toStrict . renderMarkup . toMarkup $ sanitizeAttrs e
   _ → Nothing
@@ -54,16 +54,16 @@ getInnerHtmlSanitized = getPrism _InnerHtmlSanitized
 
 _InnerTextRaw ∷ Prism' Node Text
 _InnerTextRaw = prism' NodeContent $ \s → case s of
-  NodeContent c → Just . removeWhitespace $ c
-  NodeElement e → Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+  NodeContent c → Just . collapseWhitespace $ c
+  NodeElement e → Just . collapseWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
   _ → Nothing
 
 _InnerTextWithImgs ∷ Prism' Node Text
 _InnerTextWithImgs = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
+  NodeContent c → Just $ collapseWhitespace c
   NodeElement e → if nameLocalName (elementName e) == "img"
                     then asum [ e ^. attribute "alt", e ^. attribute "src" ]
-                    else Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+                    else Just . collapseWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
   _ → Nothing
 
 getInnerTextRaw ∷ Element → Maybe Text
@@ -74,10 +74,9 @@ getInnerTextWithImgs ∷ Element → Maybe Text
 getInnerTextWithImgs e = unless' (txt == Just "") txt
   where txt = getPrism _InnerTextWithImgs e
 
-data HtmlContentMode = Unsafe | Strip | Escape | Sanitize
+data HtmlContentMode = Unsafe | Escape | Sanitize
 
 getProcessedInnerHtml ∷ HtmlContentMode → Element → Maybe Text
 getProcessedInnerHtml Unsafe   e = getInnerHtml e
-getProcessedInnerHtml Strip    e = getInnerTextRaw e
 getProcessedInnerHtml Escape   e = (T.replace "<" "&lt;" . T.replace ">" "&gt;" . T.replace "&" "&amp;") <$> getInnerHtml e
 getProcessedInnerHtml Sanitize e = getInnerHtmlSanitized e

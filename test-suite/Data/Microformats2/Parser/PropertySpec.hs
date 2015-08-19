@@ -15,7 +15,7 @@ spec ∷ Spec
 spec = do
   describe "extractProperty" $ do
     it "parses p- properties" $ do
-      let nm = extractProperty P . documentRoot . parseLBS
+      let nm = extractP . documentRoot . parseLBS
       nm [xml|<span class="p-name">Hello Basic</span>|] `shouldBe` pure "Hello Basic"
       nm [xml|<abbr class="p-name" title="Hello Abbr">HA</abbr>|] `shouldBe` pure "Hello Abbr"
       nm [xml|<abbr class="p-name">HA</abbr>|] `shouldBe` pure "HA"
@@ -31,7 +31,7 @@ spec = do
   <img alt="Span With Img" src="x.png"> </span> 	<em class="value-title" title="&& Value Title">nope</em> </span>|] `shouldBe` pure "Hello&& Value Title"
 
     it "parses u- properties" $ do
-      let ur = extractProperty U . documentRoot . parseLBS
+      let ur = extractU . documentRoot . parseLBS
       ur [xml|<a class="u-url" href="/yo/a">link</a>|] `shouldBe` pure "/yo/a"
       ur [xml|<area class="u-url" href="/yo/area"/>|] `shouldBe` pure "/yo/area"
       ur [xml|<img class="u-url" src="/yo/img"/>|] `shouldBe` pure "/yo/img"
@@ -45,7 +45,7 @@ spec = do
       ur [xml|<span class="u-url">/yo/span</span>|] `shouldBe` pure "/yo/span"
 
     it "parses dt- properties" $ do
-      let dt = extractProperty Dt . documentRoot . parseLBS
+      let dt = extractDt . documentRoot . parseLBS
       dt [xml|<time class="dt-updated" datetime="ti.me">someday</time>|] `shouldBe` pure "ti.me"
       dt [xml|<ins class="dt-updated" datetime="i.ns">someday</ins>|] `shouldBe` pure "i.ns"
       dt [xml|<del class="dt-updated" datetime="d.el">someday</del>|] `shouldBe` pure "d.el"
@@ -61,7 +61,7 @@ spec = do
 
   describe "implyProperty" $ do
     it "parses implied p-name" $ do
-      let nm = implyProperty P "name" . documentRoot . parseLBS
+      let nm = implyProperty "name" . documentRoot . parseLBS
       nm [xml|<img class="h-blah" alt="Hello Img!">|] `shouldBe` pure "Hello Img!"
       nm [xml|<abbr class="h-blah" title="Hello Abbr!">HA</abbr>|] `shouldBe` pure "Hello Abbr!"
       nm [xml|<p class="h-blah"><img alt="Hello Only Img!"></p>|] `shouldBe` pure "Hello Only Img!"
@@ -75,7 +75,7 @@ spec = do
       nm [xml|<p class="h-blah">Hello Text!</p>|] `shouldBe` pure "Hello Text!"
 
     it "parses implied u-photo" $ do
-      let ph = implyProperty U "photo" . documentRoot . parseLBS
+      let ph = implyProperty "photo" . documentRoot . parseLBS
       ph [xml|<img class="h-blah" src="selfie.png">|] `shouldBe` pure "selfie.png"
       ph [xml|<object class="h-blah" data="art.svg">|] `shouldBe` pure "art.svg"
       ph [xml|<div class="h-blah"><img src="selfie.png"/><em>yo</em>|] `shouldBe` pure "selfie.png"
@@ -84,10 +84,10 @@ spec = do
       ph [xml|<div class="h-blah"><p class="onlychild"><object data="art.svg"/><em>yo</em>|] `shouldBe` pure "art.svg"
 
     it "parses implied u-url" $ do
-      let ur = implyProperty U "url" . documentRoot . parseLBS
+      let ur = implyProperty "url" . documentRoot . parseLBS
       ur [xml|<a class="h-blah" href="/hello/a">|] `shouldBe` pure "/hello/a"
       ur [xml|<area class="h-blah" href="/hello/area">|] `shouldBe` pure "/hello/area"
       ur [xml|<div class="h-blah"><em>what</em><a href="/hello/n/a">|] `shouldBe` pure "/hello/n/a"
       ur [xml|<div class="h-blah"><em>what</em><area href="/hello/n/area">|] `shouldBe` pure "/hello/n/area"
-      ur [xml|<div class="h-blah"><div><a href="/nope"></div>|] `shouldBe` Nothing
-      ur [xml|<div class="h-blah"><a href="/nope" class="h-nope">n0pe</a>|] `shouldBe` Nothing
+      ur [xml|<div class="h-blah"><div class="p-nope"><a href="/nope"></div>|] `shouldBe` Nothing
+      ur [xml|<div class="h-blah"><a href="/nope" class="p-nope">n0pe</a>|] `shouldBe` Nothing

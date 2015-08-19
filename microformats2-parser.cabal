@@ -29,6 +29,11 @@ library
       , either
       , safe
       , containers
+      , unordered-containers
+      , vector
+      , aeson
+      , aeson-qq
+      , lens-aeson
       , data-default
       , html-conduit
       , xml-lens
@@ -54,8 +59,11 @@ executable microformats2-parser
       , network
       , streaming-commons
       , stringable
+      , data-default
       , text
       , scotty
+      , aeson
+      , aeson-pretty
       , blaze-html
       , blaze-markup
       , microformats2-parser
