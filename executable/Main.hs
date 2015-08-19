@@ -55,8 +55,8 @@ homePage v result = docTypeHtml $ do
     footer $ do
       a ! href "https://unrelenting.technology" $ "unrelenting.technology"
 
-display ∷ Show α ⇒ α → Html
-display = pre . toHtml . S.toLazyText . show
+display ∷ S.Stringable α ⇒ α → Html
+display = pre . toHtml . S.toLazyText
 
 parseResult ∷ TL.Text → Html
 parseResult h = section $ do

@@ -5,18 +5,16 @@ module Data.Microformats2.ParserSpec (spec) where
 import           Test.Hspec
 import           TestCommon
 import           Data.Microformats2.Parser
-import           Debug.Trace
-import           Data.Aeson hiding (json)
 
 spec ∷ Spec
 spec = do
   describe "parseItems" $ do
     let parseMf2' = parseMf2 def . documentRoot . parseLBS
-    it "works" $ do
+    it "parses items" $ do
       parseMf2' [xml|<body>
   <div class="h-something aaa h-something-else">
     <h1 class="someclass p-name eeee">Name</h1>
-    <span class="p-name">other name</span>
+    <header><a class="p-name u-url" href="http://main.url">other name</a></header>
     <span class="aaaaaap-nothingaaaa">---</span>
     <section class="p-org h-card">
       <a class="p-name">Card</a>
@@ -49,6 +47,7 @@ spec = do
                         "value": "org"
                     }
                 ],
+                "url": [ "http:\/\/main.url" ],
                 "name": [ "Name", "other name" ],
                 "published": [ "17th of July 2015 at 21:05", "2015-07-17T21:05:13+00:00" ],
                 "updated": [ "2015-07-17T21:05:13+00:00" ]
@@ -62,6 +61,29 @@ spec = do
                     "value": "haz name"
                 }
             ]
+        }
+    ],
+    "rels": {}
+}|]
+
+    it "inserts value and html into e-* h-* properties" $ do
+      parseMf2' [xml|<body class=h-parent><div class="h-child e-prop">some <abbr>html</abbr> and <span class="p-name">props|] `shouldBe` [json|{
+    "items": [
+        {
+            "type": [ "h-parent" ],
+            "properties": {
+                "name": [ "some html and props" ],
+                "prop": [
+                    {
+                        "type": [ "h-child" ],
+                        "properties": {
+                            "name": [ "props" ]
+                        },
+                        "value": "some html and props",
+                        "html": "some <abbr>html</abbr> and <span class=\"p-name\">props</span>"
+                    }
+                ]
+            }
         }
     ],
     "rels": {}
