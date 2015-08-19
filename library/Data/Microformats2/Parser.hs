@@ -1,7 +1,8 @@
 {-# LANGUAGE UnicodeSyntax, OverloadedStrings, CPP #-}
 
 module Data.Microformats2.Parser (
-  module Data.Microformats2.Parser
+  Mf2ParserSettings (..)
+, parseMf2
 
   -- * HTML parsing stuff (from html-conduit, xml-lens)
 , documentRoot
@@ -38,11 +39,6 @@ instance Default Mf2ParserSettings where
 mf2Elements ∷ Traversal' Element Element
 mf2Elements = attributeSatisfies "class" $ any isMf2Class . T.split isSpace
 
-deduplicateElements ∷ [Element] → [Element]
-deduplicateElements es = filter isNested es
-        -- XXX: Is there a way to make it NOT O(n^2)? Like, just not going deeper into matching elements in the first place?
-  where isNested e = not $ any (\e' → e `elem` (filter (/= e') $ e' ^.. entire)) es
-
 readPropertyName ∷ T.Text → (T.Text, T.Text)
 readPropertyName x = (fromMaybe "p" $ headMay ps, T.intercalate "-" $ drop 1 ps)
   where ps = T.splitOn "-" x
@@ -54,12 +50,20 @@ extractProperty _ "dt" e = fromMaybe Null $ String <$> extractDt e
 extractProperty m "e"  e = object [ "html" .= getProcessedInnerHtml m e, "value" .= getInnerTextRaw e ]
 extractProperty _ _    _ = Null
 
+-- lens-aeson's 'key' doesn't add new keys :-(
+
 addValue ∷ T.Text → Value → Value → Value
 addValue "p" v@(Object o) f = Object $ HMS.insert "value" (fromMaybe f $ v ^? key "properties" . key "name" . nth 0) o
 addValue "e" (Object o)   f = Object $ HMS.insert "value" (fromMaybe Null $ f ^? key "value") $ HMS.insert "html" (fromMaybe Null $ f ^? key "html") $ o
 addValue "u" v@(Object o) f = Object $ HMS.insert "value" (fromMaybe f $ v ^? key "properties" . key "url" . nth 0) o
 addValue _   (Object o)   f = Object $ HMS.insert "value" f o
 addValue _   x            _ = x
+
+addImpliedProperties ∷ Element → Value → Value
+addImpliedProperties e v@(Object o) = Object $ addIfNull "photo" "photo" $ addIfNull "url" "url" $ addIfNull "name"  "name" o
+  where addIfNull name name' obj = if null $ v ^? key name then HMS.insert name (singleton $ implyProperty name' e) obj else obj
+        singleton x = fromMaybe Null $ (Array . V.singleton . String) <$> x
+addImpliedProperties _ v = v
 
 parseProperty ∷ Mf2ParserSettings → Element → [Pair]
 parseProperty settings e =
@@ -68,18 +72,6 @@ parseProperty settings e =
   if any isMf2Class $ classes e
      then map (\(n, ts) → n .= [ addValue (fst $ head ts) (parseH settings e) (extractPropertyValue $ head ts) ]) propNames
      else map (\(n, ts) → n .= map extractPropertyValue ts) propNames
-
-addImpliedProperties ∷ Element → Value → Value
-addImpliedProperties e v@(Object o) =
-  let singleton x = fromMaybe Null $ (Array . V.singleton . String) <$> x in
-  if null $ v ^? key "name"
-     then addImpliedProperties e $ Object $ HMS.insert "name" (singleton $ implyProperty "name" e) o
-     else if null $ v ^? key "url"
-            then addImpliedProperties e $ Object $ HMS.insert "url" (singleton $ implyProperty "url" e) o
-            else if null $ v ^? key "photo"
-                   then addImpliedProperties e $ Object $ HMS.insert "photo" (singleton $ implyProperty "photo" e) o
-                   else v
-addImpliedProperties _ v = v
 
 parseH ∷ Mf2ParserSettings → Element → Value
 parseH settings e =
@@ -95,6 +87,7 @@ parseH settings e =
         extractVector (Array v) = v
         extractVector _ = V.empty
 
+-- | Parses Microformats 2 from an HTML Element into a JSON Value.
 parseMf2 ∷ Mf2ParserSettings → Element → Value
 parseMf2 settings rootEl = object [ "items" .= items, "rels" .= object [] ]
   where items = map (parseH settings) $ deduplicateElements $ rootEl ^.. entire . mf2Elements

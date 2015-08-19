@@ -8,6 +8,7 @@ module Data.Microformats2.Parser.HtmlUtil (
 , getInnerTextRaw
 , getInnerTextWithImgs
 , getProcessedInnerHtml
+, deduplicateElements
 ) where
 
 #if __GLASGOW_HASKELL__ < 709
@@ -80,3 +81,8 @@ getProcessedInnerHtml ∷ HtmlContentMode → Element → Maybe Text
 getProcessedInnerHtml Unsafe   e = getInnerHtml e
 getProcessedInnerHtml Escape   e = (T.replace "<" "&lt;" . T.replace ">" "&gt;" . T.replace "&" "&amp;") <$> getInnerHtml e
 getProcessedInnerHtml Sanitize e = getInnerHtmlSanitized e
+
+deduplicateElements ∷ [Element] → [Element]
+deduplicateElements es = filter isNested es
+  where isNested e = not $ any (\e' → e `elem` (filter (/= e') $ e' ^.. entire)) es
+        -- not the fastest function I guess...
