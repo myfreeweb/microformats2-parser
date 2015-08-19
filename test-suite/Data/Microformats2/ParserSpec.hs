@@ -12,7 +12,6 @@ import           Data.Time.Clock
 import           Data.Time.Calendar
 import           Data.Microformats2
 import           Data.Microformats2.Parser
-import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy as LB
 import           Network.URI
 #if __GLASGOW_HASKELL__ < 709

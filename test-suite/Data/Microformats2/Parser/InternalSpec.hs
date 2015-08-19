@@ -4,8 +4,6 @@ module Data.Microformats2.Parser.InternalSpec (spec) where
 
 import           Test.Hspec
 import           TestCommon
-import           Text.HTML.DOM
-import           Text.XML.Lens (documentRoot)
 import           Data.Microformats2.Parser.Internal
 #if __GLASGOW_HASKELL__ < 709
 import           Control.Applicative
@@ -15,18 +13,6 @@ import           Control.Applicative
 
 spec ∷ Spec
 spec = do
-  describe "getInnerTextRaw" $ do
-    it "returns textContent without handling imgs" $ do
-      let txtraw = getInnerTextRaw . documentRoot . parseLBS
-      txtraw [xml|<div>This is <a href="">text content</a> <img src="/yo" alt="NOPE"> without any stuff.
-  	</div>|] `shouldBe` Just "This is text content  without any stuff."
-
-  describe "getInnerTextWithImgs" $ do
-    it "returns textContent with handling imgs" $ do
-      let txtraw = getInnerTextWithImgs . documentRoot . parseLBS
-      txtraw [xml|<div>This is <a href="">text content</a> <img src="/yo" alt="with an alt"> <img src="and-src">.
-    </div>|] `shouldBe` Just "This is text content with an alt and-src."
-
   describe "extractProperty" $ do
     it "parses p- properties" $ do
       let nm = extractProperty P "name" . documentRoot . parseLBS

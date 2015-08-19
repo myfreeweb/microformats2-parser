@@ -41,6 +41,8 @@ library
     exposed-modules:
         Data.Microformats2.Parser
         Data.Microformats2.Parser.Internal
+        Data.Microformats2.Parser.HtmlUtil
+        Data.Microformats2.Parser.Util
     ghc-options: -Wall
     hs-source-dirs: library
 

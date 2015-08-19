@@ -16,6 +16,8 @@ import           Control.Monad
 import           Control.Monad.Trans.Maybe
 import           Data.Microformats2
 import           Data.Microformats2.Parser.Internal
+import           Data.Microformats2.Parser.HtmlUtil
+import           Data.Microformats2.Parser.Util
 import           Data.Default
 import           Data.Foldable (asum)
 import           Data.Maybe
@@ -219,7 +221,7 @@ discoverAuthor fetch rootEl baseUri entry = do
   runMaybeT $ asum $ map MaybeT [ processedOrigAuthors, hFeedAuthorCard, relAuthorCard ]
 
 processContent ∷ HtmlContentMode → Element → [TL.Text]
-processContent Unsafe   = extractPropertyContent getAllHtml E "content"
+processContent Unsafe   = extractPropertyContent getInnerHtml E "content"
 processContent Strip    = extractPropertyContent getInnerTextRaw E "content"
-processContent Escape   = map (TL.replace "<" "&lt;" . TL.replace ">" "&gt;" . TL.replace "&" "&amp;") . extractPropertyContent getAllHtml E "content"
-processContent Sanitize = extractPropertyContent getAllHtmlSanitized E "content"
+processContent Escape   = map (TL.replace "<" "&lt;" . TL.replace ">" "&gt;" . TL.replace "&" "&amp;") . extractPropertyContent getInnerHtml E "content"
+processContent Sanitize = extractPropertyContent getInnerHtmlSanitized E "content"

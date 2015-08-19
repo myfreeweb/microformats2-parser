@@ -11,23 +11,14 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import           Data.Text (Text)
 import           Data.Foldable (asum)
-import qualified Data.Set as S
 import qualified Data.Map as M
 import           Data.Maybe
 import           Data.Time.Format
 import           Text.XML.Lens hiding (re)
-import           Text.HTML.SanitizeXSS
-import           Text.Blaze
-import           Text.Blaze.Renderer.Text
 import           Text.Regex.PCRE.Heavy
 import           Safe (readMay)
-import           Debug.Trace
-
-if' ∷ Bool → Maybe a → Maybe a
-if' c x = if c then x else Nothing
-
-unless' ∷ Bool → Maybe a → Maybe a
-unless' c x = if c then Nothing else x
+import           Data.Microformats2.Parser.HtmlUtil
+import           Data.Microformats2.Parser.Util
 
 unwrapName ∷ (Name, a) → (Text, a)
 unwrapName (Name n _ _, val) = (n, val)
@@ -76,58 +67,6 @@ getOnlyOfType n e = if' (fromMaybe False $ notProperty <$> r) $ r
 
 els ∷ [Name] → Traversal' Element Element
 els ns f s = if elementName s `elem` ns then f s else pure s
-
-removeWhitespace ∷ Text → Text
-removeWhitespace = gsub [re|(\s+|&nbsp;)|] (" " ∷ String) -- lol vim |||||||
-
-getPrism ∷ Prism' Node Text → Element → Maybe Text
-getPrism t e = Just . T.strip <$> T.concat $ e ^.. nodes . traverse . t
-
-_InnerHtml ∷ Prism' Node Text
-_InnerHtml = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
-  NodeElement e → Just . TL.toStrict . renderMarkup . toMarkup $ e
-  _ → Nothing
-
-getAllHtml ∷ Element → Maybe Text
-getAllHtml = getPrism _InnerHtml
-
-sanitizeAttrs ∷ Element → Element
-sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe modify $ M.toList $ elementAttributes e }
-  where modify (Name n _ _, val) = sanitizeAttribute (n, val)
-        wrapName (n, val) = (Name n Nothing Nothing, val)
-
-_InnerHtmlSanitized ∷ Prism' Node Text
-_InnerHtmlSanitized = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
-  NodeElement e → if' (safeTagName $ nameLocalName (elementName e)) $
-                    Just . TL.toStrict . renderMarkup . toMarkup $ sanitizeAttrs e
-  _ → Nothing
-
-getAllHtmlSanitized ∷ Element → Maybe Text
-getAllHtmlSanitized = getPrism _InnerHtmlSanitized
-
-_InnerTextRaw ∷ Prism' Node Text
-_InnerTextRaw = prism' NodeContent $ \s → case s of
-  NodeContent c → Just . removeWhitespace $ c
-  NodeElement e → Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
-  _ → Nothing
-
-_InnerTextWithImgs ∷ Prism' Node Text
-_InnerTextWithImgs = prism' NodeContent $ \s → case s of
-  NodeContent c → Just $ removeWhitespace c
-  NodeElement e → if nameLocalName (elementName e) == "img"
-                    then asum [ getImgAreaAlt e, getImgSrc e ]
-                    else Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
-  _ → Nothing
-
-getInnerTextRaw ∷ Element → Maybe Text
-getInnerTextRaw e = unless' (txt == Just "") txt
-  where txt = getPrism _InnerTextRaw e
-
-getInnerTextWithImgs ∷ Element → Maybe Text
-getInnerTextWithImgs e = unless' (txt == Just "") txt
-  where txt = getPrism _InnerTextWithImgs e
 
 getAbbrTitle ∷ Element → Maybe Text
 getAbbrTitle e = e ^. el "abbr" . attribute "title"
@@ -215,7 +154,7 @@ extractProperty Dt n e' =
   findProperty e' (className Dt n) >>=
   firstJustOf (extractValueClassPattern ms : ms ++ [getInnerTextRaw])
   where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]
-extractProperty E n e' = findProperty e' (className E n) >>= liftM maybeToList getAllHtml
+extractProperty E n e' = findProperty e' (className E n) >>= liftM maybeToList getInnerHtml
 
 extractPropertyL ∷ PropType → String → Element → [TL.Text]
 extractPropertyL t n e = TL.fromStrict <$> if null extracted then maybeToList $ implyProperty t n e else extracted
@@ -250,9 +189,3 @@ implyProperty U "photo" e = asum $ [ getImgSrc, getObjectData
                                    ] <*> pure e
 implyProperty U "url"   e = asum $ [ getAAreaHref, getOnlyOfTypeAAreaHref ] <*> pure e
 implyProperty _ _ _ = Nothing
-
-listToMaybeList ∷ [α] → Maybe [α]
-listToMaybeList l = unless' (null l) $ Just l
-
-stripQueryString ∷ TL.Text → TL.Text
-stripQueryString = TL.intercalate "" . take 1 . TL.splitOn "?" . TL.strip
