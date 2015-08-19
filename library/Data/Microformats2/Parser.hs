@@ -204,7 +204,7 @@ discoverAuthor fetch rootEl baseUri entry = do
       seqListMaybe = liftM (listToMaybeList . catMaybes) . sequence
       processedOrigAuthors = seqListMaybe $ fetchAuthorIfUrl <$> entryAuthor entry
       hFeedAuthorCard = do
-        -- TODO: check that the feed actually contains the entry // use processUrl
+        -- TODO: check that the feed actually contains the entry // use stripQueryString
         case rootEl ^? entire . hasClass "h-feed" of
           Nothing → return Nothing
           Just hFeedEl → seqListMaybe $ fetchAuthorIfUrl <$> extractAuthor hFeedEl

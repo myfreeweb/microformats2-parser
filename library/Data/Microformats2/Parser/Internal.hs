@@ -26,6 +26,9 @@ import           Debug.Trace
 if' ∷ Bool → Maybe a → Maybe a
 if' c x = if c then x else Nothing
 
+unless' ∷ Bool → Maybe a → Maybe a
+unless' c x = if c then Nothing else x
+
 unwrapName ∷ (Name, a) → (Text, a)
 unwrapName (Name n _ _, val) = (n, val)
 
@@ -50,11 +53,6 @@ notProperty ∷ Element → Bool
 notProperty (Element _ a _) = not $ any isProperty $ T.splitOn " " $ fromMaybe "" $ lookup "class" $ map unwrapName $ M.toList a
   where isProperty x = T.isPrefixOf "p-" x || T.isPrefixOf "u-" x || T.isPrefixOf "e-" x || T.isPrefixOf "dt-" x || T.isPrefixOf "h-" x
 notProperty _ = True
-
-entireNotProperty ∷ Traversal' Element Element
-entireNotProperty = entireFiltered notMf
-  where notMf (NodeElement e) = notProperty e
-        notMf _ = True
 
 hasOneClass ∷ [String] → Traversal' Element Element
 hasOneClass ns = attributeSatisfies "class" $ \a → any (\x → (T.pack x) `elem` (T.splitOn " " a)) ns
@@ -94,12 +92,6 @@ _InnerHtml = prism' NodeContent $ \s → case s of
 getAllHtml ∷ Element → Maybe Text
 getAllHtml = getPrism _InnerHtml
 
--- XXX: https://github.com/yesodweb/haskell-xss-sanitize/issues/11
-safeTagName ∷ Text → Bool
-safeTagName = (`S.member` S.fromList [ "a", "b", "abbr", "acronym", "br", "ul", "li", "ol", "span", "strong", "em",
-                                       "i", "q", "img", "time", "strike", "kbd", "dl", "dt", "pre", "p", "blockquote",
-                                       "code", "cite", "figure", "figcaption", "big", "dfn" ])
-
 sanitizeAttrs ∷ Element → Element
 sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe modify $ M.toList $ elementAttributes e }
   where modify (Name n _ _, val) = sanitizeAttribute (n, val)
@@ -108,9 +100,8 @@ sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe m
 _InnerHtmlSanitized ∷ Prism' Node Text
 _InnerHtmlSanitized = prism' NodeContent $ \s → case s of
   NodeContent c → Just $ removeWhitespace c
-  NodeElement e → if not $ safeTagName $ nameLocalName (elementName e)
-                       then Nothing
-                       else Just . TL.toStrict . renderMarkup . toMarkup $ sanitizeAttrs e
+  NodeElement e → if' (safeTagName $ nameLocalName (elementName e)) $
+                    Just . TL.toStrict . renderMarkup . toMarkup $ sanitizeAttrs e
   _ → Nothing
 
 getAllHtmlSanitized ∷ Element → Maybe Text
@@ -121,17 +112,16 @@ _InnerText = prism' NodeContent $ \s → case s of
   NodeContent c → Just $ removeWhitespace c
   NodeElement e → if nameLocalName (elementName e) == "img"
                     then e ^. el "img" . attribute "alt"
-                    else if notMicroformat e
-                      then Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
-                      else Nothing
+                    else if' (notMicroformat e) $
+                      Just . removeWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
   _ → Nothing
 
 getAllText ∷ Element → Maybe Text
-getAllText e = if txt == Just "" then Nothing else txt
+getAllText e = unless' (txt == Just "") txt
   where txt = getPrism _InnerText e
 
 getText ∷ Element → Maybe Text
-getText e = if txt == Just "" then Nothing else txt
+getText e = unless' (txt == Just "") txt
   where txt = listToMaybe $ T.strip <$> e ^.. entireNotMicroformat . nodes . traverse . _Content
 
 getAbbrTitle ∷ Element → Maybe Text
@@ -203,22 +193,22 @@ findPropertyMicroformatNotNestedIn excl e n s = filter (/= e) $ e ^.. entireNotC
 
 data PropType = P | U | Dt | E
 
-extract ∷ [Element → Maybe Text] → Element → [Text]
-extract ps e = catMaybes $ [ \x -> asum $ ps <*> pure x ] <*> pure e
+firstJustOf ∷ [Element → Maybe Text] → Element → [Text]
+firstJustOf ps e = catMaybes $ [ \x -> asum $ ps <*> pure x ] <*> pure e
 
 extractProperty ∷ PropType → String → Element → [Text]
 extractProperty P n e' =
   findProperty e' (className P n) >>=
-  extract [ extractValueClassPattern [extractValueTitle, extractValue]
-          , extractValue ]
+  firstJustOf [ extractValueClassPattern [extractValueTitle, extractValue]
+              , extractValue ]
 extractProperty U n e' =
   findProperty e' (className U n) >>=
-  extract [ getAAreaHref, getImgAudioVideoSourceSrc
-          , extractValueClassPattern [extractValueTitle, extractValue]
-          , getAbbrTitle, getDataInputValue, getAllText ]
+  firstJustOf [ getAAreaHref, getImgAudioVideoSourceSrc
+              , extractValueClassPattern [extractValueTitle, extractValue]
+              , getAbbrTitle, getDataInputValue, getAllText ]
 extractProperty Dt n e' =
   findProperty e' (className Dt n) >>=
-  extract (extractValueClassPattern ms : ms ++ [getAllText])
+  firstJustOf (extractValueClassPattern ms : ms ++ [getAllText])
   where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]
 extractProperty E n e' = findProperty e' (className E n) >>= liftM maybeToList getAllHtml
 
@@ -242,7 +232,7 @@ extractPropertyDt n e = catMaybes $ readISO <$> T.unpack <$> extractProperty Dt 
         parseTimeD = parseTimeM True defaultTimeLocale 
 
 extractPropertyContent ∷ (Element → Maybe Text) → PropType → String → Element → [TL.Text]
-extractPropertyContent ex t n e = findProperty e (className t n) >>= extract [ ex ] >>= return . TL.fromStrict
+extractPropertyContent ex t n e = findProperty e (className t n) >>= firstJustOf [ ex ] >>= return . TL.fromStrict
 
 implyProperty ∷ PropType → String → Element → Maybe Text
 implyProperty P "name"  e = asum $ [ getImgAreaAlt, getAbbrTitle
@@ -257,7 +247,7 @@ implyProperty U "url"   e = asum $ [ getAAreaHref, getOnlyOfTypeAAreaHref ] <*> 
 implyProperty _ _ _ = Nothing
 
 listToMaybeList ∷ [α] → Maybe [α]
-listToMaybeList l = if null l then Nothing else Just l
+listToMaybeList l = unless' (null l) $ Just l
 
-processUrl ∷ TL.Text → TL.Text
-processUrl = TL.intercalate "" . take 1 . TL.splitOn "?" . TL.strip
+stripQueryString ∷ TL.Text → TL.Text
+stripQueryString = TL.intercalate "" . take 1 . TL.splitOn "?" . TL.strip

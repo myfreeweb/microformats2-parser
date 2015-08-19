@@ -14,7 +14,7 @@ import           Network.Wai.Handler.Warp
 import qualified Network.Wai.Handler.CGI as CGI
 import qualified Network.Socket as S
 import           Web.Scotty
-import           Text.Blaze.Html5 as H
+import           Text.Blaze.Html5 as H hiding (main)
 import           Text.Blaze.Html5.Attributes as A
 import           Text.Blaze.Html.Renderer.Utf8 (renderHtml)
 import qualified Options as O
