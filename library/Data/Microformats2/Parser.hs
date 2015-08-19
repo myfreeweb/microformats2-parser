@@ -61,9 +61,13 @@ addValue _   x            _ = x
 
 addImpliedProperties ∷ Element → Value → Value
 addImpliedProperties e v@(Object o) = Object $ addIfNull "photo" "photo" $ addIfNull "url" "url" $ addIfNull "name"  "name" o
-  where addIfNull name name' obj = if null $ v ^? key name then HMS.insert name (singleton $ implyProperty name' e) obj else obj
+  where addIfNull nameJ nameH obj = if null $ v ^? key nameJ then HMS.insert nameJ (singleton $ implyProperty nameH e) obj else obj
         singleton x = fromMaybe Null $ (Array . V.singleton . String) <$> x
 addImpliedProperties _ v = v
+
+removePropertiesOfNestedMicroformats ∷ [Element] → [Element] → [Element]
+removePropertiesOfNestedMicroformats nmf2s es = filter (not . isNested) es
+    where isNested e = any (\e' → e `elem` (filter (/= e') $ e' ^.. entire)) nmf2s
 
 parseProperty ∷ Mf2ParserSettings → Element → [Pair]
 parseProperty settings e =
@@ -78,11 +82,12 @@ parseH settings e =
   object $ filter (not . emptyVal . snd) [
     "type" .= typeNames, "properties" .= properties, "children" .= childrenMf2 ]
   where typeNames = filter isMf2Class $ classes e
-        childrenMf2 = map (\x → addValue "p" x Null) $ map (parseH settings) $ filter (not . isProperty) $ deduplicateElements $ filter (/= e) $ e ^.. entire . mf2Elements
+        childrenMf2 = map (\x → addValue "p" x Null) $ map (parseH settings) $ filter (not . isProperty) $ deduplicateElements $ allMf2Descendants 
+        allMf2Descendants = filter (/= e) $ e ^.. entire . mf2Elements
         -- we have to do all of this because multiple elements can become multiple properties (with overlap)
         properties = Object $ HMS.filter (not . emptyVal) $ properties'
         (Object properties') = addImpliedProperties e $ object $ map mergeProps $ groupBy' fst properties''
-        properties'' = concat $ map (parseProperty settings) $ deduplicateElements $ filter (/= e) $ e ^.. entire . propertyElements
+        properties'' = concat $ map (parseProperty settings) $ removePropertiesOfNestedMicroformats allMf2Descendants $ filter (/= e) $ e ^.. entire . propertyElements
         mergeProps (n, vs) = (n, Array $ V.concat $ reverse $ map (extractVector . snd) vs)
         extractVector (Array v) = v
         extractVector _ = V.empty

@@ -85,6 +85,7 @@ test-suite tests
       , template-haskell
       , microformats2-parser
       , raw-strings-qq
+      , aeson-qq
       , data-default
       , html-conduit
       , xml-lens

@@ -88,3 +88,37 @@ spec = do
     ],
     "rels": {}
 }|]
+
+    it "parses nested properties but doesn't parse properties of nested microformats into the parent" $ do
+      parseMf2' [xml|<body class=h-parent>
+                <span class="p-outer"><span class="p-inner">some</span>thing</span>
+                <div class="p-outer"><div class="h-child p-prop"><span class="p-aaa">a</span></div></div>
+                <div class="h-child"><span class="p-bbb">b</span></div>|] `shouldBe` [json|{
+    "items": [
+        {
+            "type": [ "h-parent" ],
+            "properties": {
+                "name": [ "something a b" ],
+                "outer": [ "something", "a" ],
+                "inner": [ "some" ],
+                "prop": [ {
+                    "type": [ "h-child" ],
+                    "properties": {
+                        "name": [ "a" ],
+                        "aaa": [ "a" ]
+                    },
+                    "value": "a"
+                } ]
+            },
+            "children": [ {
+                "type": [ "h-child" ],
+                "properties": {
+                    "name": [ "b" ],
+                    "bbb": [ "b" ]
+                },
+                "value": "b"
+            } ]
+        }
+    ],
+    "rels": {}
+}|]
