@@ -1,11 +1,15 @@
 # microformats2-parser [![Hackage](https://img.shields.io/hackage/v/microformats2-parser.svg?style=flat)](https://hackage.haskell.org/package/microformats2-parser) [![Build Status](https://img.shields.io/travis/myfreeweb/microformats2-parser.svg?style=flat)](https://travis-ci.org/myfreeweb/microformats2-parser) [![unlicense](https://img.shields.io/badge/un-license-green.svg?style=flat)](http://unlicense.org)
 
-[Microformats 2] parser for Haskell!
+[Microformats 2] parser for Haskell! [#IndieWeb]
 
-Originally created for [sweetroll] :-)
+Originally created for [sweetroll].
+
+Also check out [http-link-header] because you often need to read links from the Link header!
 
 [Microformats 2]: http://microformats.org/wiki/microformats2
+[#IndieWeb]: http://indiewebcamp.com
 [sweetroll]: https://github.com/myfreeweb/sweetroll
+[http-link-header]: https://github.com/myfreeweb/http-link-header
 
 ## [DEMO PAGE](https://unrelenting.technology/mf2/)
 

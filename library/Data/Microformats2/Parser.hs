@@ -2,6 +2,7 @@
 
 module Data.Microformats2.Parser (
   Mf2ParserSettings (..)
+, HtmlContentMode (..)
 , parseMf2
 
   -- * HTML parsing stuff (from html-conduit, xml-lens)
