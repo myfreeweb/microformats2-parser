@@ -1,13 +1,18 @@
 {-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
+{-# LANGUAGE CPP, TupleSections #-}
 
 module Data.Microformats2.Parser.Util where
 
+#if __GLASGOW_HASKELL__ < 709
+import           Control.Applicative
+#endif
 import           Data.Aeson
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Map as M
 import qualified Data.Vector as V
+import qualified Data.Foldable as F
 import           Text.Regex.PCRE.Heavy
 
 if' ∷ Bool → Maybe a → Maybe a
@@ -34,3 +39,7 @@ emptyVal _ = False
 
 groupBy' ∷ (Ord β) ⇒ (α → β) → [α] → [(β, [α])]
 groupBy' f = M.toAscList . M.fromListWith (++) . map (\a → (f a, [a]))
+
+-- https://hackage.haskell.org/package/liquid-fixpoint-0.4.0.0/docs/src/Language-Fixpoint-Misc.html#expandSnd
+expandSnd ∷ Foldable φ ⇒ φ ([α], β) → [(α, β)]
+expandSnd = F.concatMap (\(xs, y) → (, y) <$> xs)

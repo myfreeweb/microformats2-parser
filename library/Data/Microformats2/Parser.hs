@@ -29,6 +29,7 @@ import qualified Data.Vector as V
 import           Data.Maybe
 import qualified Data.Text as T
 import           Safe (headMay)
+import           Debug.Trace
 
 data Mf2ParserSettings = Mf2ParserSettings 
   { htmlMode ∷ HtmlContentMode }
@@ -95,5 +96,15 @@ parseH settings e =
 
 -- | Parses Microformats 2 from an HTML Element into a JSON Value.
 parseMf2 ∷ Mf2ParserSettings → Element → Value
-parseMf2 settings rootEl = object [ "items" .= items, "rels" .= object [] ]
+parseMf2 settings rootEl = object [ "items" .= items, "rels" .= rels, "rel-urls" .= relUrls ]
   where items = map (parseH settings) $ deduplicateElements $ rootEl ^.. entire . mf2Elements
+        rels = object $ map (\(r, es) → r .= map snd es) $ groupBy' fst $ expandSnd $ map (\e → ((T.split isSpace $ e ^. attr "rel"), e ^. attr "href")) linkEls
+        relUrls = object $ map relUrlObject linkEls
+        relUrlObject e = (e ^. attr "href") .= object (filter (not . emptyVal . snd) [
+            "rels" .= (T.split isSpace $ e ^. attr "rel")
+          , "text" .= fromMaybe Null (String <$> getInnerTextWithImgs e)
+          , linkAttr "type" "type" e
+          , linkAttr "media" "media" e
+          , linkAttr "hreflang" "hreflang" e ])
+        linkAttr nameJ nameH e = nameJ .= fromMaybe Null (String <$> e ^. attribute nameH)
+        linkEls = filter (not . null . (^. attribute "href")) $ filter (not . null . (^. attribute "rel")) $ rootEl ^.. entire . els [ "a", "link" ]

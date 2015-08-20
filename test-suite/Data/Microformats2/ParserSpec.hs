@@ -63,7 +63,9 @@ spec = do
             ]
         }
     ],
-    "rels": {}
+    "rels": {},
+    "rel-urls": {}
+
 }|]
 
     it "inserts value and html into e-* h-* properties" $ do
@@ -86,7 +88,8 @@ spec = do
             }
         }
     ],
-    "rels": {}
+    "rels": {},
+    "rel-urls": {}
 }|]
 
     it "parses nested properties but doesn't parse properties of nested microformats into the parent" $ do
@@ -120,5 +123,45 @@ spec = do
             } ]
         }
     ],
-    "rels": {}
+    "rels": {},
+    "rel-urls": {}
+}|]
+
+    it "parses rels" $ do
+      parseMf2' [xml|<html>
+  <head><link rel="alternate feed me" href="/atom.xml" type="application/atom+xml"></head>
+  <body>
+    <a href="//example.com">test</a>
+    <a href="https://twitter.com/myfreeweb" rel=me>twitter</a>
+    <p><span><a href="https://github.com/myfreeweb" rel=me media=handheld hreflang=en>github</a></span></p>
+    <footer><a href="/-1" rel="prev">-1</a></footer>
+  </body>
+</html>|] `shouldBe` [json|{
+    "items": [],
+    "rels": {
+        "feed": [ "/atom.xml" ],
+        "me": [ "https:\/\/github.com\/myfreeweb", "https:\/\/twitter.com\/myfreeweb", "/atom.xml" ],
+        "alternate": [ "/atom.xml" ],
+        "prev": [ "/-1" ]
+    },
+    "rel-urls": {
+        "/atom.xml": { 
+            "type": "application/atom+xml",
+            "rels": [ "alternate", "feed", "me" ]
+        },
+        "https://twitter.com/myfreeweb": { 
+            "text": "twitter",
+            "rels": [ "me" ]
+        },
+        "https://github.com/myfreeweb": { 
+            "text": "github",
+            "rels": [ "me" ],
+            "media": "handheld",
+            "hreflang": "en"
+        },
+        "/-1": {
+            "text": "-1",
+            "rels": [ "prev" ]
+        }
+    }
 }|]
