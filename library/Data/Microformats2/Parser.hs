@@ -29,7 +29,6 @@ import qualified Data.Vector as V
 import           Data.Maybe
 import qualified Data.Text as T
 import           Safe (headMay)
-import           Debug.Trace
 
 data Mf2ParserSettings = Mf2ParserSettings 
   { htmlMode ∷ HtmlContentMode }
