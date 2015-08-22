@@ -76,6 +76,7 @@ getInnerTextWithImgs e = unless' (txt == Just "") txt
   where txt = getPrism _InnerTextWithImgs e
 
 data HtmlContentMode = Unsafe | Escape | Sanitize
+  deriving (Show, Eq)
 
 getProcessedInnerHtml ∷ HtmlContentMode → Element → Maybe Text
 getProcessedInnerHtml Unsafe   e = getInnerHtml e

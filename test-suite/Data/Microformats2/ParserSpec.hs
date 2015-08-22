@@ -2,14 +2,17 @@
 
 module Data.Microformats2.ParserSpec (spec) where
 
-import           Test.Hspec
+import           Test.Hspec hiding (shouldBe)
+import           Test.Hspec.Expectations.Pretty (shouldBe)
 import           TestCommon
+import           Network.URI (parseURI)
 import           Data.Microformats2.Parser
 
 spec ∷ Spec
 spec = do
   describe "parseItems" $ do
-    let parseMf2' = parseMf2 def . documentRoot . parseLBS
+    let parseMf2'' c = parseMf2 c . documentRoot . parseLBS
+    let parseMf2' = parseMf2'' def
     it "parses items" $ do
       parseMf2' [xml|<body>
   <div class="h-something aaa h-something-else">
@@ -164,4 +167,53 @@ spec = do
             "rels": [ "prev" ]
         }
     }
+}|]
+
+    it "resolves relative URIs" $ do
+
+      parseMf2' [xml|<html> <base href="http://example.com"> <a href="/atom.xml" rel=me>feed</a> </html>|] `shouldBe` [json|{
+    "items": [],
+    "rels": { "me": [ "http://example.com/atom.xml" ] },
+    "rel-urls": { "http://example.com/atom.xml": { "text": "feed", "rels": [ "me" ] } } }|]
+
+      parseMf2'' (def { baseUri = parseURI "http://com.example" }) [xml|<html> <a href="/atom.xml" rel=me>feed</a> </html>|] `shouldBe` [json|{
+    "items": [],
+    "rels": { "me": [ "http://com.example/atom.xml" ] },
+    "rel-urls": { "http://com.example/atom.xml": { "text": "feed", "rels": [ "me" ] } } }|]
+
+      parseMf2'' (def { baseUri = parseURI "http://com.example" }) [xml|<html> <base href="http://example.com"> <a href="/atom.xml" rel=me>feed</a> </html>|] `shouldBe` [json|{
+    "items": [],
+    "rels": { "me": [ "http://example.com/atom.xml" ] },
+    "rel-urls": { "http://example.com/atom.xml": { "text": "feed", "rels": [ "me" ] } } }|]
+
+      parseMf2'' (def { baseUri = parseURI "http://com.example" }) [xml|<html> <base href="/base/"> <a href="atom.xml" rel=me>feed</a> </html>|] `shouldBe` [json|{
+    "items": [],
+    "rels": { "me": [ "http://com.example/base/atom.xml" ] },
+    "rel-urls": { "http://com.example/base/atom.xml": { "text": "feed", "rels": [ "me" ] } } }|]
+
+      parseMf2' [xml|<html> <base href="/base/"> <a href="atom.xml" rel=me>feed</a> </html>|] `shouldBe` [json|{
+    "items": [],
+    "rels": { "me": [ "/base/atom.xml" ] },
+    "rel-urls": { "/base/atom.xml": { "text": "feed", "rels": [ "me" ] } } }|]
+
+      parseMf2'' (def { baseUri = parseURI "http://com.example" }) [xml|<html>
+  <base href="/base/">
+  <a href="atom.xml" rel=me>feed</a>
+  <div class=h-card>
+    <a href="url" class=u-url>url</a>
+    <img src="photo.webp" alt="photo of me"> <!-- implied by :only-of-type -->
+  </div>
+</html>|] `shouldBe` [json|{
+    "items": [
+        {
+            "type": [ "h-card" ],
+            "properties": {
+                "photo": [ "http://com.example/base/photo.webp" ],
+                "url": [ "http://com.example/base/url" ],
+                "name": [ "url" ]
+            }
+        }
+    ],
+    "rels": { "me": [ "http://com.example/base/atom.xml" ] },
+    "rel-urls": { "http://com.example/base/atom.xml": { "text": "feed", "rels": [ "me" ] } }
 }|]

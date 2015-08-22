@@ -82,6 +82,7 @@ test-suite tests
       , bytestring
       , network-uri
       , hspec
+      , hspec-expectations-pretty-diff
       , template-haskell
       , microformats2-parser
       , raw-strings-qq
