@@ -30,6 +30,7 @@ The `def` is the [default](https://hackage.haskell.org/package/data-default-clas
 
 The configuration includes:
 - `htmlMode`, an HTML parsing mode (`Unsafe` | `Escape` | **`Sanitize`**)
+- `baseUri`, the `Maybe URI` that represents the address you retrieved the HTML from, used for resolving relative addresses -- you should set it
 
 `parseMf2` will return an Aeson [Value](https://hackage.haskell.org/package/aeson-0.8.0.2/docs/Data-Aeson-Types.html#t:Value) structured like [canonical microformats2 JSON](http://microformats.org/wiki/microformats2).
 [lens-aeson](https://hackage.haskell.org/package/lens-aeson) is a good way to navigate it.

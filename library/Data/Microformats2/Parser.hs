@@ -49,7 +49,7 @@ readPropertyName x = (fromMaybe "p" $ headMay ps, T.intercalate "-" $ drop 1 ps)
 
 extractProperty ∷ Mf2ParserSettings → T.Text → Element → Value
 extractProperty _ "p"  e = fromMaybe Null $ String <$> extractP e
-extractProperty s "u"  e = fromMaybe Null $ String <$> resolveUrl s <$> extractU e
+extractProperty s "u"  e = fromMaybe Null $ String <$> resolveUrl s <$> extractU e -- XXX: spec says only resolve when href/src/data but not value-class/value/title/innerText -- WTF?
 extractProperty _ "dt" e = fromMaybe Null $ String <$> extractDt e
 extractProperty s "e"  e = object [ "html" .= getProcessedInnerHtml (htmlMode s) e, "value" .= getInnerTextRaw e ]
 extractProperty _ _    _ = Null
