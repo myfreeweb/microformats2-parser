@@ -87,10 +87,13 @@ parseProperty settings e =
 
 parseH ∷ Mf2ParserSettings → Element → Value
 parseH settings e =
-  object $ filter (not . emptyVal . snd) [
-    "type" .= typeNames, "properties" .= properties, "children" .= childrenMf2 ]
-  where typeNames = filter isMf2Class $ classes e
-        childrenMf2 = map ((\x → addValue "p" x Null) . parseH settings) $ filter (not . isProperty) $ deduplicateElements allMf2Descendants
+  object $ filter (\(n, v) → not (emptyVal v) || n == "properties") [
+      "type"       .= filter isMf2Class (classes e)
+    , "properties" .= properties
+    , "children"   .= childrenMf2
+    , "shape"      .= fromMaybe Null (String <$> e ^. el "area" . attribute "shape")
+    , "coords"     .= fromMaybe Null (String <$> e ^. el "area" . attribute "coords") ]
+  where childrenMf2 = map ((\x → addValue "p" x Null) . parseH settings) $ filter (not . isProperty) $ deduplicateElements allMf2Descendants
         allMf2Descendants = filter (/= e) $ e ^.. entire . mf2Elements
         -- we have to do all of this because multiple elements can become multiple properties (with overlap)
         properties = Object $ HMS.filter (not . emptyVal) properties'

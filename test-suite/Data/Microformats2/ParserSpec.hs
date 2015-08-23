@@ -30,6 +30,10 @@ spec = do
     <Div class="h-nested-something">
       haz name
     </Div>
+    <map name="primary">
+      <area shape="circle" coords="200,250,25" class="h-area" />
+      <area class="h-area" />
+    </map>
   </div>
 </body>|] `shouldBe` [json|{
     "items": [
@@ -65,6 +69,18 @@ spec = do
                         "name": [ "haz name" ]
                     },
                     "value": "haz name"
+                },
+                {
+                    "type": [ "h-area" ],
+                    "properties": {},
+                    "shape": "circle",
+                    "coords": "200,250,25",
+                    "value": null
+                },
+                {
+                    "type": [ "h-area" ],
+                    "properties": {},
+                    "value": null
                 }
             ]
         }
