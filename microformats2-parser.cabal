@@ -1,5 +1,5 @@
 name:            microformats2-parser
-version:         1.0.0
+version:         1.0.1
 synopsis:        A Microformats 2 parser.
 category:        Web
 homepage:        https://github.com/myfreeweb/microformats2-parser
@@ -9,7 +9,7 @@ maintainer:      greg@unrelenting.technology
 license:         PublicDomain
 license-file:    UNLICENSE
 build-type:      Simple
-cabal-version:   >= 1.18
+cabal-version:   >= 1.10
 extra-source-files:
     README.md
 tested-with:
@@ -21,7 +21,7 @@ source-repository head
 
 library
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.7.0.0 && < 5
       , transformers
       , text
       , bytestring
@@ -52,7 +52,7 @@ library
 
 executable microformats2-parser
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.7.0.0 && < 5
       , options
       , warp
       , wai-extra
@@ -76,7 +76,7 @@ executable microformats2-parser
 
 test-suite tests
     build-depends:
-        base >= 4.0.0.0 && < 5
+        base >= 4.7.0.0 && < 5
       , mtl
       , time
       , text

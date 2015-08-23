@@ -1,8 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# LANGUAGE OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE OverloadedStrings, UnicodeSyntax, CPP #-}
 
 module Main (main) where
 
+#if __GLASGOW_HASKELL__ < 709
+import           Control.Applicative
+#endif
 import           Control.Exception
 import           Data.Microformats2.Parser
 import           Data.List

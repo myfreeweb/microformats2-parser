@@ -68,7 +68,7 @@ addValue _   x            _ = x
 
 addImpliedProperties ∷ Mf2ParserSettings → Element → Value → Value
 addImpliedProperties settings e v@(Object o) = Object $ addIfNull "photo" "photo" resolveUrl' $ addIfNull "url" "url" resolveUrl' $ addIfNull "name" "name" id o
-  where addIfNull nameJ nameH f obj = if null $ v ^? key nameJ then HMS.insert nameJ (singleton $ f <$> implyProperty nameH e) obj else obj
+  where addIfNull nameJ nameH f obj = if isNothing $ v ^? key nameJ then HMS.insert nameJ (singleton $ f <$> implyProperty nameH e) obj else obj
         singleton x = fromMaybe Null $ (Array . V.singleton . String) <$> x
         resolveUrl' = resolveUrl settings
 addImpliedProperties _ _ v = v
@@ -91,8 +91,8 @@ parseH settings e =
       "type"       .= filter isMf2Class (classes e)
     , "properties" .= properties
     , "children"   .= childrenMf2
-    , "shape"      .= fromMaybe Null (String <$> e ^. el "area" . attribute "shape")
-    , "coords"     .= fromMaybe Null (String <$> e ^. el "area" . attribute "coords") ]
+    , "shape"      .= fromMaybe Null (String <$> e ^? el "area" . attr "shape")
+    , "coords"     .= fromMaybe Null (String <$> e ^? el "area" . attr "coords") ]
   where childrenMf2 = map ((\x → addValue "p" x Null) . parseH settings) $ filter (not . isProperty) $ deduplicateElements allMf2Descendants
         allMf2Descendants = filter (/= e) $ e ^.. entire . mf2Elements
         -- we have to do all of this because multiple elements can become multiple properties (with overlap)
@@ -115,10 +115,10 @@ parseMf2 settings rootEl = object [ "items" .= items, "rels" .= rels, "rel-urls"
           , linkAttr "type" "type" e
           , linkAttr "media" "media" e
           , linkAttr "hreflang" "hreflang" e ])
-        linkAttr nameJ nameH e = nameJ .= fromMaybe Null (String <$> e ^. attribute nameH)
-        linkEls = filter (not . null . (^. attribute "href")) $ filter (not . null . (^. attribute "rel")) $ rootEl' ^.. entire . els [ "a", "link" ]
+        linkAttr nameJ nameH e = nameJ .= fromMaybe Null (String <$> e ^? attr nameH)
+        linkEls = filter (isJust . (^? attr "href")) $ filter (isJust . (^? attr "rel")) $ rootEl' ^.. entire . els [ "a", "link" ]
         -- Obligatory WTF comment about base[href] being relative to the URI the page was requested from! <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base>
-        settings' = settings { baseUri = case (baseUri settings, parseURIReference =<< T.unpack <$> (rootEl' ^. entire . el "base" . attribute "href")) of
+        settings' = settings { baseUri = case (baseUri settings, parseURIReference =<< T.unpack <$> (rootEl' ^? entire . el "base" . attr "href")) of
                                            (Just sU, Just tU) → Just (tU `relativeTo` sU)
                                            (Just sU, Nothing) → Just sU
                                            (Nothing, Just tU) → Just tU

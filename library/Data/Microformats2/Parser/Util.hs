@@ -41,5 +41,5 @@ groupBy' ∷ (Ord β) ⇒ (α → β) → [α] → [(β, [α])]
 groupBy' f = M.toAscList . M.fromListWith (++) . map (\a → (f a, [a]))
 
 -- https://hackage.haskell.org/package/liquid-fixpoint-0.4.0.0/docs/src/Language-Fixpoint-Misc.html#expandSnd
-expandSnd ∷ Foldable φ ⇒ φ ([α], β) → [(α, β)]
+expandSnd ∷ F.Foldable φ ⇒ φ ([α], β) → [(α, β)]
 expandSnd = F.concatMap (\(xs, y) → (, y) <$> xs)
