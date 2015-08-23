@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
+{-# LANGUAGE OverloadedStrings, UnicodeSyntax #-}
 {-# LANGUAGE CPP, RankNTypes #-}
 
 module Data.Microformats2.Parser.HtmlUtil (
@@ -85,5 +85,5 @@ getProcessedInnerHtml Sanitize e = getInnerHtmlSanitized e
 
 deduplicateElements ∷ [Element] → [Element]
 deduplicateElements es = filter (not . isNested) es
-  where isNested e = any (\e' → e `elem` (filter (/= e') $ e' ^.. entire)) es
+  where isNested e = any (\e' → e `elem` filter (/= e') (e' ^.. entire)) es
         -- not the fastest function I guess...
