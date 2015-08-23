@@ -22,6 +22,7 @@ Look at the API docs [on Hackage](https://hackage.haskell.org/package/microforma
 
 import Data.Microformats2.Parser
 import Data.Default
+import Network.URI
 
 parseMf2 def $ documentRoot $ parseLBS "<body><p class=h-entry><h1 class=p-name>Yay!</h1></p></body>"
 ```

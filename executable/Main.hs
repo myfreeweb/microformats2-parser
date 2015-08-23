@@ -17,6 +17,7 @@ import           Network.Wai.Handler.Warp
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Middleware.Autohead
 import qualified Network.Socket as S
+import           Network.URI (parseURI)
 import           Web.Scotty
 import           Text.Blaze.Html5 as H hiding (main, param, object)
 import           Text.Blaze.Html5.Attributes as A
@@ -42,23 +43,32 @@ homePage v = docTypeHtml $ do
   H.head $ do
     H.meta ! charset "utf-8"
     H.title "microformats2-parser"
-    H.style "body { font-family: 'Helvetica Neue', sans-serif; max-width: 900px; margin: 0 auto; } a { color: #ba2323; } a:hover { color: #da4343; } pre, textarea, button { width: 100%; } textarea { resize: vertical; min-height: 10em; margin-bottom: 1em; } pre { white-space: pre-wrap; } footer { margin: 2em 0; }"
+    H.style "body { font-family: 'Helvetica Neue', sans-serif; max-width: 900px; margin: 0 auto; } a { color: #ba2323; } a:hover { color: #da4343; } pre, input, textarea, button { width: 100%; } input, textarea { margin-bottom: 1em; } textarea { resize: vertical; min-height: 15em; } pre { white-space: pre-wrap; } footer { margin: 2em 0; }"
   H.body $ do
-    h1 $ do
-      a ! href "https://github.com/myfreeweb/microformats2-parser" $ "microformats2-parser"
+    H.header $ do
+      h1 $ do
+        a ! href "https://github.com/myfreeweb/microformats2-parser" $ "microformats2-parser"
+      a ! href "https://github.com/myfreeweb/microformats2-parser" $ img ! alt "GitHub" ! src "https://img.shields.io/badge/git-hub-gray.svg?style=flat"
+      " "
+      a ! href "https://hackage.haskell.org/package/microformats2-parser" $ img ! alt "Hackage" ! src "https://img.shields.io/hackage/v/microformats2-parser.svg?style=flat"
+      " "
+      a ! href "https://travis-ci.org/myfreeweb/microformats2-parser" $ img ! alt "Build Status" ! src "https://img.shields.io/travis/myfreeweb/microformats2-parser.svg?style=flat"
+      " "
+      a ! href "http://unlicense.org" $ img ! alt "unlicense" ! src "https://img.shields.io/badge/un-license-green.svg?style=flat"
     p "This is a test page for the Microformats 2 Haskell parser."
     p "Notes:"
     ul $ do
       li "this demo page uses the Sanitize mode for e-*"
       li $ do
         a ! href "http://enable-cors.org" $ "CORS is enabled"
-        "on the endpoint (POST parse.json, the 'html' form-urlencoded parameter)"
+        " on the endpoint (POST parse.json, form-urlencoded, 'html' and 'base' parameter)"
       li $ a ! href "http://jsonview.com" $ "JSONView is awesome"
     H.form ! method "post" ! action "parse.json" $ do
       textarea ! name "html" $ toHtml v
+      input ! name "base" ! type_ "url" ! placeholder "https://example.com/base/url/for/resolving/relative/urls"
       button "Parse!"
     footer $ do
-      a ! href "https://unrelenting.technology" $ "unrelenting.technology"
+      a ! href "https://unrelenting.technology" ! rel "author" $ "unrelenting.technology"
 
 app = scottyApp $ do
   middleware autohead
@@ -73,10 +83,11 @@ app = scottyApp $ do
 
   post "/parse.json" $ do
     html ← param "html"
+    base ← param "base" `rescue` (\_ → return "")
     setHeader "Content-Type" "application/json; charset=utf-8"
     setHeader "Access-Control-Allow-Origin" "*"
     let root = documentRoot $ parseLBS html
-    raw $ encodePretty $ parseMf2 def root
+    raw $ encodePretty $ parseMf2 (def { baseUri = parseURI base }) root
 
 main = O.runCommand $ \opts args → do
   let warpSettings = setPort (port opts) defaultSettings

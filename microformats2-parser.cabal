@@ -57,6 +57,7 @@ executable microformats2-parser
       , warp
       , wai-extra
       , network
+      , network-uri
       , streaming-commons
       , stringable
       , data-default
