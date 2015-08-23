@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
-{-# LANGUAGE CPP, RankNTypes #-}
+{-# LANGUAGE CPP, RankNTypes, TupleSections #-}
 
 module Data.Microformats2.Parser.Property where
 
@@ -79,14 +79,23 @@ extractValueClassPattern fs e = if' (isJust $ e ^? valueParts) extractValueParts
         valueParts          ∷ Applicative f => (Element → f Element) → Element → f Element
         valueParts          = entire . hasOneClass ["value", "value-title"]
 
-extractP, extractU, extractDt ∷ Element → Maybe Text
+extractP ∷ Element → Maybe Text
 extractP e =
   asum $ [ extractValueClassPattern [extractValueTitle, extractValue]
          , getAbbrTitle, getDataInputValue, getImgAreaAlt, getInnerTextWithImgs ] <*> pure e
+
+extractU ∷ Element
+         → Maybe (Text, Bool) -- ^ The Microformats 2 spec requires URL resolution only in some cases. The Bool here is whether you should resolve the result.
 extractU e =
-  asum $ [ getAAreaHref, getImgAudioVideoSourceSrc
-         , extractValueClassPattern [extractValueTitle, extractValue]
-         , getAbbrTitle, getDataInputValue, getInnerTextRaw ] <*> pure e
+  asum $ [ (, True) <$> getAAreaHref e
+         , (, True) <$> getImgAudioVideoSourceSrc e
+         , (, True) <$> getObjectData e
+         , (, False) <$> extractValueClassPattern [extractValueTitle, extractValue] e
+         , (, False) <$> getAbbrTitle e
+         , (, False) <$> getDataInputValue e
+         , (, False) <$> getInnerTextRaw e ]
+
+extractDt ∷ Element → Maybe Text
 extractDt e =
   asum $ (extractValueClassPattern ms : ms ++ [getInnerTextRaw]) <*> pure e
   where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]

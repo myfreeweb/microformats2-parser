@@ -32,17 +32,18 @@ spec = do
 
     it "parses u- properties" $ do
       let ur = extractU . documentRoot . parseLBS
-      ur [xml|<a class="u-url" href="/yo/a">link</a>|] `shouldBe` pure "/yo/a"
-      ur [xml|<area class="u-url" href="/yo/area"/>|] `shouldBe` pure "/yo/area"
-      ur [xml|<img class="u-url" src="/yo/img"/>|] `shouldBe` pure "/yo/img"
-      ur [xml|<audio class="u-url" src="/yo/audio"/>|] `shouldBe` pure "/yo/audio"
-      ur [xml|<video class="u-url" src="/yo/video"/>|] `shouldBe` pure "/yo/video"
-      ur [xml|<source class="u-url" src="/yo/source"/>|] `shouldBe` pure "/yo/source"
-      ur [xml|<span class="u-url"><b class=value>/yo</b><em class="value">/vcp</span>|] `shouldBe` pure "/yo/vcp"
-      ur [xml|<abbr class="u-url" title="/yo/abbr"/>|] `shouldBe` pure "/yo/abbr"
-      ur [xml|<data class="u-url" value="/yo/data"/>|] `shouldBe` pure "/yo/data"
-      ur [xml|<input class="u-url" value="/yo/input"/>|] `shouldBe` pure "/yo/input"
-      ur [xml|<span class="u-url">/yo/span</span>|] `shouldBe` pure "/yo/span"
+      ur [xml|<a class="u-url" href="/yo/a">link</a>|] `shouldBe` pure ("/yo/a", True)
+      ur [xml|<area class="u-url" href="/yo/area"/>|] `shouldBe` pure ("/yo/area", True)
+      ur [xml|<img class="u-url" src="/yo/img"/>|] `shouldBe` pure ("/yo/img", True)
+      ur [xml|<audio class="u-url" src="/yo/audio"/>|] `shouldBe` pure ("/yo/audio", True)
+      ur [xml|<video class="u-url" src="/yo/video"/>|] `shouldBe` pure ("/yo/video", True)
+      ur [xml|<source class="u-url" src="/yo/source"/>|] `shouldBe` pure ("/yo/source", True)
+      ur [xml|<object class="u-url" data="/yo/data"/>|] `shouldBe` pure ("/yo/data", True)
+      ur [xml|<span class="u-url"><b class=value>/yo</b><em class="value">/vcp</span>|] `shouldBe` pure ("/yo/vcp", False)
+      ur [xml|<abbr class="u-url" title="/yo/abbr"/>|] `shouldBe` pure ("/yo/abbr", False)
+      ur [xml|<data class="u-url" value="/yo/data"/>|] `shouldBe` pure ("/yo/data", False)
+      ur [xml|<input class="u-url" value="/yo/input"/>|] `shouldBe` pure ("/yo/input", False)
+      ur [xml|<span class="u-url">/yo/span</span>|] `shouldBe` pure ("/yo/span", False)
 
     it "parses dt- properties" $ do
       let dt = extractDt . documentRoot . parseLBS
