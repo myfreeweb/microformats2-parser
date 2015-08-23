@@ -4,11 +4,18 @@
 
 Originally created for [sweetroll].
 
+- parses `items`, `rels`, `rel-urls`
+- resolves relative URLs (with support for the `<base>` tag)
+- handles malformed HTML (the actual HTML parser is [tagstream-conduit])
+- high performance
+- extensively tested
+
 Also check out [http-link-header] because you often need to read links from the Link header!
 
 [Microformats 2]: http://microformats.org/wiki/microformats2
 [#IndieWeb]: http://indiewebcamp.com
 [sweetroll]: https://github.com/myfreeweb/sweetroll
+[tagstream-conduit]: https://hackage.haskell.org/package/tagstream-conduit
 [http-link-header]: https://github.com/myfreeweb/http-link-header
 
 ## [DEMO PAGE](https://unrelenting.technology/mf2/)
@@ -25,6 +32,8 @@ import Data.Default
 import Network.URI
 
 parseMf2 def $ documentRoot $ parseLBS "<body><p class=h-entry><h1 class=p-name>Yay!</h1></p></body>"
+
+parseMf2 (def { baseUri = parseURI "https://where.i.got/that/page/from/" }) $ documentRoot $ parseLBS "<body><base href=\"base/\"><link rel=micropub href='micropub'><p class=h-entry><h1 class=p-name>Yay!</h1></p></body>"
 ```
 
 The `def` is the [default](https://hackage.haskell.org/package/data-default-class-0.0.1/docs/Data-Default-Class.html) configuration.
