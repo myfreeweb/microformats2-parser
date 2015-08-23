@@ -17,16 +17,19 @@ spec = do
       parseMf2' [xml|<body>
   <div class="h-something aaa h-something-else">
     <h1 class="someclass p-name eeee">Name</h1>
-    <header><a class="p-name u-url" href="http://main.url">other name</a></header>
+    <header><A class="p-name u-url" href="http://main.url">other name</a></header>
     <span class="aaaaaap-nothingaaaa">---</span>
     <section class="p-org h-card">
       <a class="p-name">Card</a>
     </section>
+    <template>
+      <a href="http://ignore.this" class="p-org h-card">IGNORED</a>
+    </template>
     <a href="http://card.url" class="p-org h-card">org</a>
     <time class="dt-published p-published dt-updated" datetime="2015-07-17T21:05:13+00:00">17<sup>th</sup> of July 2015 at 21:05</time>
-    <div class="h-nested-something">
+    <Div class="h-nested-something">
       haz name
-    </div>
+    </Div>
   </div>
 </body>|] `shouldBe` [json|{
     "items": [

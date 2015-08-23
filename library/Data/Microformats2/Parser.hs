@@ -103,7 +103,7 @@ parseH settings e =
 -- | Parses Microformats 2 from an HTML Element into a JSON Value.
 parseMf2 ∷ Mf2ParserSettings → Element → Value
 parseMf2 settings rootEl = object [ "items" .= items, "rels" .= rels, "rel-urls" .= relUrls ]
-  where items = map (parseH settings') $ deduplicateElements $ rootEl ^.. entire . mf2Elements
+  where items = map (parseH settings') $ deduplicateElements $ rootEl' ^.. entire . mf2Elements
         rels = object $ map (\(r, es) → r .= map snd es) $ groupBy' fst $ expandSnd $ map (\e → ((T.split isSpace $ e ^. attr "rel"), resolveUrl settings' $ e ^. attr "href")) linkEls
         relUrls = object $ map relUrlObject linkEls
         relUrlObject e = (resolveUrl settings' $ e ^. attr "href") .= object (filter (not . emptyVal . snd) [
@@ -113,15 +113,24 @@ parseMf2 settings rootEl = object [ "items" .= items, "rels" .= rels, "rel-urls"
           , linkAttr "media" "media" e
           , linkAttr "hreflang" "hreflang" e ])
         linkAttr nameJ nameH e = nameJ .= fromMaybe Null (String <$> e ^. attribute nameH)
-        linkEls = filter (not . null . (^. attribute "href")) $ filter (not . null . (^. attribute "rel")) $ rootEl ^.. entire . els [ "a", "link" ]
+        linkEls = filter (not . null . (^. attribute "href")) $ filter (not . null . (^. attribute "rel")) $ rootEl' ^.. entire . els [ "a", "link" ]
         -- Obligatory WTF comment about base[href] being relative to the URI the page was requested from! <https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base>
-        settings' = settings { baseUri = case (baseUri settings, parseURIReference =<< T.unpack <$> (rootEl ^. entire . el "base" . attribute "href")) of
+        settings' = settings { baseUri = case (baseUri settings, parseURIReference =<< T.unpack <$> (rootEl' ^. entire . el "base" . attribute "href")) of
                                            (Just sU, Just tU) → Just (tU `relativeTo` sU)
                                            (Just sU, Nothing) → Just sU
                                            (Nothing, Just tU) → Just tU
                                            (Nothing, Nothing) → Nothing }
+        rootEl' = preprocessHtml rootEl
 
 resolveUrl ∷ Mf2ParserSettings → T.Text → T.Text
 resolveUrl settings t = case parseURIReference $ T.unpack t of
                           Just u → T.pack $ uriToString id (u `relativeTo` (fromMaybe nullURI $ baseUri settings)) ""
                           Nothing → t
+
+preprocessHtml ∷ Element → Element
+preprocessHtml (Element n as ns) = Element (lowerName n) as $ map preprocessChildren $ filter (not . isTemplate) ns
+  where isTemplate (NodeElement (Element (Name "template" _ _) _ _)) = True
+        isTemplate _ = False
+        preprocessChildren (NodeElement e) = NodeElement $ preprocessHtml e
+        preprocessChildren x = x
+        lowerName (Name txt x y) = Name (T.toLower txt) x y
