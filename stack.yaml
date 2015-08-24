@@ -1,6 +1,6 @@
 flags: {}
 packages:
   - '.'
-resolver: nightly-2015-08-19
+resolver: lts-3.2
 extra-deps:
   - hspec-expectations-pretty-diff-0.7.2.2
