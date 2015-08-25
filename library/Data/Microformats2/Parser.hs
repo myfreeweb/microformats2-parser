@@ -24,6 +24,7 @@ import           Data.Aeson
 import           Data.Aeson.Types
 import           Data.Aeson.Lens
 import           Data.Char (isSpace)
+import           Data.List (isPrefixOf)
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Vector as V
 import           Data.Maybe
@@ -126,9 +127,12 @@ parseMf2 settings rootEl = object [ "items" .= items, "rels" .= rels, "rel-urls"
         rootEl' = preprocessHtml rootEl
 
 resolveUrl ∷ Mf2ParserSettings → T.Text → T.Text
-resolveUrl settings t = case parseURIReference $ T.unpack t of
-                          Just u → T.pack $ uriToString id (u `relativeTo` fromMaybe nullURI (baseUri settings)) ""
-                          Nothing → t
+resolveUrl settings t =
+  case parseURIReference $ resolveSlashSlash $ T.unpack t of
+    Just u → T.pack $ uriToString id (u `relativeTo` baseUri') ""
+    Nothing → t
+  where resolveSlashSlash x = if "//" `isPrefixOf` x then uriScheme baseUri' ++ x else x
+        baseUri' = fromMaybe nullURI (baseUri settings)
 
 preprocessHtml ∷ Element → Element
 preprocessHtml (Element n as ns) = Element (lowerName n) as $ map preprocessChildren $ filter (not . isTemplate) ns

@@ -200,6 +200,11 @@ spec = do
     "rels": { "me": [ "http://com.example/atom.xml" ] },
     "rel-urls": { "http://com.example/atom.xml": { "text": "feed", "rels": [ "me" ] } } }|]
 
+      parseMf2'' (def { baseUri = parseURI "http://com.example" }) [xml|<html> <a href="//example.com" rel=me>feed</a> </html>|] `shouldBe` [json|{
+    "items": [],
+    "rels": { "me": [ "http://example.com" ] },
+    "rel-urls": { "http://example.com": { "text": "feed", "rels": [ "me" ] } } }|]
+
       parseMf2'' (def { baseUri = parseURI "http://com.example" }) [xml|<html> <base href="http://example.com"> <a href="/atom.xml" rel=me>feed</a> </html>|] `shouldBe` [json|{
     "items": [],
     "rels": { "me": [ "http://example.com/atom.xml" ] },
