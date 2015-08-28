@@ -11,7 +11,7 @@ module Data.Microformats2.Parser.HtmlUtil (
 , deduplicateElements
 ) where
 
-#if __GLASGOW_HASKELL__ < 709
+#if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
 #endif
 import qualified Data.Map as M

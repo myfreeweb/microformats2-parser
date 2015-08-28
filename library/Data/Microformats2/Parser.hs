@@ -13,7 +13,7 @@ module Data.Microformats2.Parser (
 
 import           Text.HTML.DOM
 import           Text.XML.Lens hiding ((.=))
-#if __GLASGOW_HASKELL__ < 709
+#if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
 #endif
 import           Data.Microformats2.Parser.Property

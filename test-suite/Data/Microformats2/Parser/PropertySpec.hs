@@ -5,7 +5,7 @@ module Data.Microformats2.Parser.PropertySpec (spec) where
 import           Test.Hspec
 import           TestCommon
 import           Data.Microformats2.Parser.Property
-#if __GLASGOW_HASKELL__ < 709
+#if !MIN_VERSION_base(4,8,0)
 import           Control.Applicative
 #endif
 
