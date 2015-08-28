@@ -56,7 +56,8 @@ getInnerHtmlSanitized = getPrism _InnerHtmlSanitized
 _InnerTextRaw ∷ Prism' Node Text
 _InnerTextRaw = prism' NodeContent $ \s → case s of
   NodeContent c → Just . collapseWhitespace $ c
-  NodeElement e → Just . collapseWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
+  NodeElement e → if' (safeTagName $ nameLocalName (elementName e)) $
+                    Just . collapseWhitespace . TL.toStrict . renderMarkup . contents . toMarkup $ e
   _ → Nothing
 
 _InnerTextWithImgs ∷ Prism' Node Text

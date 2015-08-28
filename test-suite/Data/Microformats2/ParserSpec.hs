@@ -19,6 +19,7 @@ spec = do
     <h1 class="someclass p-name eeee">Name</h1>
     <header><A class="p-name u-url" href="http://main.url">other name</a></header>
     <span class="aaaaaap-nothingaaaa">---</span>
+    <div class="e-content">Some <abbr>XSS</abbr><script>alert('pwned')</script></div>
     <section class="p-org h-card">
       <a class="p-name">Card</a>
     </section>
@@ -59,6 +60,7 @@ spec = do
                 ],
                 "url": [ "http:\/\/main.url" ],
                 "name": [ "Name", "other name" ],
+                "content": [ { "html": "Some <abbr>XSS</abbr>", "value": "Some XSS" } ],
                 "published": [ "17th of July 2015 at 21:05", "2015-07-17T21:05:13+00:00" ],
                 "updated": [ "2015-07-17T21:05:13+00:00" ]
             },
