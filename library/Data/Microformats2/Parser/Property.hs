@@ -13,10 +13,11 @@ import           Data.Foldable (asum)
 import qualified Data.Map as M
 import           Data.Maybe
 import           Text.XML.Lens hiding (re)
+import           Data.Microformats2.Parser.Date (normalizeDTParts, parseDTParts)
 import           Data.Microformats2.Parser.HtmlUtil
 import           Data.Microformats2.Parser.Util
 
-unwrapName ∷ (Name, a) → (Text, a)
+unwrapName ∷ (Name, α) → (Text, α)
 unwrapName (Name n _ _, val) = (n, val)
 
 classes ∷ Element → [Text]
@@ -72,16 +73,23 @@ getOnlyOfTypeAAreaHref    e = (^. attribute "href") =<< asum (getOnlyOfType <$> 
 extractValue              e = asum $ [ getAbbrTitle, getDataInputValue, getImgAreaAlt, getInnerTextRaw ] <*> pure e
 extractValueTitle         e = if' (isJust $ e ^? hasClass "value-title") $ e ^. attribute "title"
 
-extractValueClassPattern ∷ [Element → Maybe Text] → Element → Maybe Text
+extractValueClassPattern ∷ [Element → Maybe Text] → Element → Maybe [Text]
 extractValueClassPattern fs e = if' (isJust $ e ^? valueParts) extractValueParts
-  where extractValueParts   = Just . T.concat . catMaybes $ e ^.. valueParts . to extractValuePart
+  where extractValueParts   = Just . catMaybes $ e ^.. valueParts . to extractValuePart
         extractValuePart e' = asum $ fs <*> pure e'
-        valueParts          ∷ Applicative f => (Element → f Element) → Element → f Element
+        valueParts          ∷ Applicative φ => (Element → φ Element) → Element → φ Element
         valueParts          = entire . hasOneClass ["value", "value-title"]
+
+extractValueClassPatternConcat ∷ [Element → Maybe Text] → Element → Maybe Text
+extractValueClassPatternConcat fs e = T.concat <$> extractValueClassPattern fs e
+
+extractValueClassPatternDate ∷ [Element → Maybe Text] → Element → Maybe Text
+extractValueClassPatternDate fs e = asum [ T.pack . show <$> (normalizeDTParts $ parseDTParts $ fromMaybe [] valueParts), T.concat <$> valueParts ]
+  where valueParts = extractValueClassPattern fs e
 
 extractP ∷ Element → Maybe Text
 extractP e =
-  asum $ [ extractValueClassPattern [extractValueTitle, extractValue]
+  asum $ [ extractValueClassPatternConcat [extractValueTitle, extractValue]
          , getAbbrTitle, getDataInputValue, getImgAreaAlt, getInnerTextWithImgs ] <*> pure e
 
 extractU ∷ Element
@@ -90,15 +98,15 @@ extractU e =
   asum $ [ (, True) <$> getAAreaHref e
          , (, True) <$> getImgAudioVideoSourceSrc e
          , (, True) <$> getObjectData e
-         , (, False) <$> extractValueClassPattern [extractValueTitle, extractValue] e
+         , (, False) <$> extractValueClassPatternConcat [extractValueTitle, extractValue] e
          , (, False) <$> getAbbrTitle e
          , (, False) <$> getDataInputValue e
          , (, False) <$> getInnerTextRaw e ]
 
 extractDt ∷ Element → Maybe Text
 extractDt e =
-  asum $ (extractValueClassPattern ms : ms ++ [getInnerTextRaw]) <*> pure e
-  where ms = [ getTimeInsDelDatetime, getAbbrTitle, getDataInputValue ]
+  asum $ (extractValueClassPatternDate ms : ms ++ [getInnerTextRaw]) <*> pure e
+  where ms = [ getTimeInsDelDatetime, extractValueTitle, extractValue ]
 
 implyProperty ∷ String → Element → Maybe Text
 implyProperty "name"  e = asum $ [ getImgAreaAlt, getAbbrTitle

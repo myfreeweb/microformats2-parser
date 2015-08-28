@@ -58,6 +58,22 @@ spec = do
             <time class="value" datetime="ti">TIME</time>
             <ins class="value" datetime="me">lol</time>
           </span>|] `shouldBe` pure "vcptime"
+      dt [xml|<span class="dt-updated">
+            <time class="value" datetime="05:55-0700">VCP</time>
+            <time class="value">2015-08-28</time>
+          </span>|] `shouldBe` pure "2015-08-28T05:55:00-07:00"
+      dt [xml|<span class="dt-updated">
+            <span class="value-title" title="Z"></span>
+            <time class="value" datetime="05:55"></time>
+            <time class="value">2015-08-28</time>
+          </span>|] `shouldBe` pure "2015-08-28T05:55:00+00:00"
+      dt [xml|<span class="dt-updated">
+            <span class="value-title" title="+01:00"></span>
+            <time class="value">2015-08-28</time>
+          </span>|] `shouldBe` pure "2015-08-28"
+      dt [xml|<span class="dt-updated">
+            <time class="value" datetime="2015-08-28 05:55:00+00"></time>
+          </span>|] `shouldBe` pure "2015-08-28T05:55:00+00:00"
       dt [xml|<span class="dt-updated">date</span>|] `shouldBe` pure "date"
 
   describe "implyProperty" $ do
