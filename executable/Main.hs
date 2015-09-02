@@ -15,7 +15,6 @@ import           Data.Aeson.Types (object)
 import           Data.Default
 import qualified Data.Text.Lazy as TL
 import           Data.Streaming.Network (bindPath)
-import qualified Data.Stringable as S
 import           Network.Wai.Handler.Warp
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Middleware.Autohead

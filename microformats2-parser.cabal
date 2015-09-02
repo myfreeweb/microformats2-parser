@@ -62,7 +62,6 @@ executable microformats2-parser
       , network
       , network-uri
       , streaming-commons
-      , stringable
       , data-default
       , text
       , scotty
