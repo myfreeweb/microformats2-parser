@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings, UnicodeSyntax #-}
-{-# LANGUAGE CPP, RankNTypes #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, RankNTypes  #-}
 
 module Data.Microformats2.Parser.HtmlUtil (
   HtmlContentMode (..)
@@ -11,9 +10,7 @@ module Data.Microformats2.Parser.HtmlUtil (
 , deduplicateElements
 ) where
 
-#if !MIN_VERSION_base(4,8,0)
-import           Control.Applicative
-#endif
+import           Prelude.Compat
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL

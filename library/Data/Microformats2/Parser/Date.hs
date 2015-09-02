@@ -1,12 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-{-# LANGUAGE OverloadedStrings, UnicodeSyntax, CPP, TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeFamilies #-}
 
 module Data.Microformats2.Parser.Date where
 
-#if !MIN_VERSION_base(4,8,0)
-import           Prelude hiding (sequence)
-import           Data.Traversable
-#endif
+import           Prelude.Compat
 import           Control.Applicative
 import           Control.Monad
 import           Control.Error.Util (hush)

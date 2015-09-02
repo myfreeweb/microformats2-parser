@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
 {-# LANGUAGE CPP, RankNTypes, TupleSections #-}
+-- LOL: CPP is required for the \ linebreak thing
 
 module Data.Microformats2.Parser.Property where
 
-#if !MIN_VERSION_base(4,8,0)
-import           Control.Applicative
-#endif
+import           Prelude.Compat
 import qualified Data.Text as T
 import           Data.Text (Text)
 import           Data.Char (isSpace)

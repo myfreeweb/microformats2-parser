@@ -1,13 +1,11 @@
-{-# LANGUAGE OverloadedStrings, UnicodeSyntax, QuasiQuotes, CPP #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes #-}
 
 module Data.Microformats2.Parser.PropertySpec (spec) where
 
+import           Prelude.Compat
 import           Test.Hspec
 import           TestCommon
 import           Data.Microformats2.Parser.Property
-#if !MIN_VERSION_base(4,8,0)
-import           Control.Applicative
-#endif
 
 {-# ANN module ("HLint: ignore Redundant do"::String) #-}
 

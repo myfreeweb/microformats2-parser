@@ -1,11 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-# LANGUAGE OverloadedStrings, UnicodeSyntax, CPP #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax #-}
 
 module Main (main) where
 
-#if !MIN_VERSION_base(4,8,0)
-import           Control.Applicative
-#endif
+import           Prelude.Compat
 import           Control.Exception
 import           Data.Microformats2.Parser
 import           Data.List

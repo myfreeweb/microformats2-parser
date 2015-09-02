@@ -1,11 +1,8 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
-{-# LANGUAGE CPP, TupleSections #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, QuasiQuotes, UnicodeSyntax, TupleSections #-}
 
 module Data.Microformats2.Parser.Util where
 
-#if !MIN_VERSION_base(4,8,0)
-import           Control.Applicative
-#endif
+import           Prelude.Compat
 import           Data.Aeson
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL

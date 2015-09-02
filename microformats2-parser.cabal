@@ -22,6 +22,7 @@ source-repository head
 library
     build-depends:
         base >= 4.7.0.0 && < 5
+      , base-compat >= 0.8.0
       , transformers
       , text
       , bytestring
@@ -56,6 +57,7 @@ library
 executable microformats2-parser
     build-depends:
         base >= 4.7.0.0 && < 5
+      , base-compat >= 0.8.0
       , options
       , warp
       , wai-extra
@@ -79,6 +81,7 @@ executable microformats2-parser
 test-suite tests
     build-depends:
         base >= 4.7.0.0 && < 5
+      , base-compat >= 0.8.0
       , mtl
       , time
       , text

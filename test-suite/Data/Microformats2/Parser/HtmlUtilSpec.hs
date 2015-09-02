@@ -1,7 +1,8 @@
-{-# LANGUAGE OverloadedStrings, UnicodeSyntax, QuasiQuotes #-}
+{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, QuasiQuotes #-}
 
 module Data.Microformats2.Parser.HtmlUtilSpec (spec) where
 
+import           Prelude.Compat
 import           Test.Hspec
 import           TestCommon
 import           Data.Microformats2.Parser.HtmlUtil

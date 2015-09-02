@@ -1,4 +1,4 @@
-{-# LANGUAGE UnicodeSyntax, OverloadedStrings, CPP #-}
+{-# LANGUAGE NoImplicitPrelude, UnicodeSyntax, OverloadedStrings #-}
 
 module Data.Microformats2.Parser (
   Mf2ParserSettings (..)
@@ -11,11 +11,9 @@ module Data.Microformats2.Parser (
 , sinkDoc
 ) where
 
+import           Prelude.Compat
 import           Text.HTML.DOM
 import           Text.XML.Lens hiding ((.=))
-#if !MIN_VERSION_base(4,8,0)
-import           Control.Applicative
-#endif
 import           Data.Microformats2.Parser.Property
 import           Data.Microformats2.Parser.HtmlUtil
 import           Data.Microformats2.Parser.Util

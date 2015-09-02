@@ -1,7 +1,8 @@
-{-# LANGUAGE QuasiQuotes, OverloadedStrings, UnicodeSyntax #-}
+{-# LANGUAGE NoImplicitPrelude, QuasiQuotes, OverloadedStrings, UnicodeSyntax #-}
 
 module Data.Microformats2.ParserSpec (spec) where
 
+import           Prelude.Compat
 import           Test.Hspec hiding (shouldBe)
 import           Test.Hspec.Expectations.Pretty (shouldBe)
 import           TestCommon
