@@ -22,7 +22,6 @@ import           Data.Aeson
 import           Data.Aeson.Types
 import           Data.Aeson.Lens
 import           Data.Char (isSpace)
-import           Data.List (isPrefixOf)
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Vector as V
 import           Data.Maybe
@@ -49,11 +48,11 @@ readPropertyName x = (fromMaybe "p" $ headMay ps, T.intercalate "-" $ drop 1 ps)
 extractProperty ∷ Mf2ParserSettings → T.Text → Element → Value
 extractProperty _ "p"  e = fromMaybe Null $ String <$> extractP e
 extractProperty s "u"  e = fromMaybe Null $ String <$> case extractU e of
-                                                         Just (u, True) → Just $ resolveUrl s u
+                                                         Just (u, True) → Just $ resolveURI (baseUri s) u
                                                          Just (t, False) → Just t
                                                          Nothing → Nothing
 extractProperty _ "dt" e = fromMaybe Null $ String <$> extractDt e
-extractProperty s "e"  e = object [ "html" .= getProcessedInnerHtml (htmlMode s) e, "value" .= getInnerTextRaw e ]
+extractProperty s "e"  e = object [ "html" .= getProcessedInnerHtml (htmlMode s) (baseUri s) e, "value" .= getInnerTextRaw e ]
 extractProperty _ _    _ = Null
 
 -- lens-aeson's 'key' doesn't add new keys :-(
@@ -66,10 +65,10 @@ addValue _   (Object o)   f = Object $ HMS.insert "value" f o
 addValue _   x            _ = x
 
 addImpliedProperties ∷ Mf2ParserSettings → Element → Value → Value
-addImpliedProperties settings e v@(Object o) = Object $ addIfNull "photo" "photo" resolveUrl' $ addIfNull "url" "url" resolveUrl' $ addIfNull "name" "name" id o
+addImpliedProperties settings e v@(Object o) = Object $ addIfNull "photo" "photo" resolveURI' $ addIfNull "url" "url" resolveURI' $ addIfNull "name" "name" id o
   where addIfNull nameJ nameH f obj = if isNothing $ v ^? key nameJ then HMS.insert nameJ (singleton $ f <$> implyProperty nameH e) obj else obj
         singleton x = fromMaybe Null $ (Array . V.singleton . String) <$> x
-        resolveUrl' = resolveUrl settings
+        resolveURI' = resolveURI $ baseUri settings
 addImpliedProperties _ _ v = v
 
 removePropertiesOfNestedMicroformats ∷ [Element] → [Element] → [Element]
@@ -106,9 +105,9 @@ parseH settings e =
 parseMf2 ∷ Mf2ParserSettings → Element → Value
 parseMf2 settings rootEl = object [ "items" .= items, "rels" .= rels, "rel-urls" .= relUrls ]
   where items = map (parseH settings') $ deduplicateElements $ rootEl' ^.. entire . mf2Elements
-        rels = object $ map (\(r, es) → r .= map snd es) $ groupBy' fst $ expandSnd $ map (\e → (T.split isSpace (e ^. attr "rel"), resolveUrl settings' $ e ^. attr "href")) linkEls
+        rels = object $ map (\(r, es) → r .= map snd es) $ groupBy' fst $ expandSnd $ map (\e → (T.split isSpace (e ^. attr "rel"), resolveURI (baseUri settings') $ e ^. attr "href")) linkEls
         relUrls = object $ map relUrlObject linkEls
-        relUrlObject e = resolveUrl settings' (e ^. attr "href") .= object (filter (not . emptyVal . snd) [
+        relUrlObject e = resolveURI (baseUri settings') (e ^. attr "href") .= object (filter (not . emptyVal . snd) [
             "rels" .= T.split isSpace (e ^. attr "rel")
           , "text" .= fromMaybe Null (String <$> getInnerTextWithImgs e)
           , linkAttr "type" "type" e
@@ -123,14 +122,6 @@ parseMf2 settings rootEl = object [ "items" .= items, "rels" .= rels, "rel-urls"
                                            (Nothing, Just tU) → Just tU
                                            (Nothing, Nothing) → Nothing }
         rootEl' = preprocessHtml rootEl
-
-resolveUrl ∷ Mf2ParserSettings → T.Text → T.Text
-resolveUrl settings t =
-  case parseURIReference $ resolveSlashSlash $ T.unpack t of
-    Just u → T.pack $ uriToString id (u `relativeTo` baseUri') ""
-    Nothing → t
-  where resolveSlashSlash x = if "//" `isPrefixOf` x then uriScheme baseUri' ++ x else x
-        baseUri' = fromMaybe nullURI (baseUri settings)
 
 preprocessHtml ∷ Element → Element
 preprocessHtml (Element n as ns) = Element (lowerName n) as $ map preprocessChildren $ filter (not . isTemplate) ns

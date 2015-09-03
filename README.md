@@ -5,7 +5,7 @@
 Originally created for [sweetroll].
 
 - parses `items`, `rels`, `rel-urls`
-- resolves relative URLs (with support for the `<base>` tag)
+- resolves relative URLs (with support for the `<base>` tag), including inside of `html` for `e-*` properties
 - parses the [value-class-pattern](http://microformats.org/wiki/value-class-pattern), including date and time normalization
 - handles malformed HTML (the actual HTML parser is [tagstream-conduit])
 - high performance
