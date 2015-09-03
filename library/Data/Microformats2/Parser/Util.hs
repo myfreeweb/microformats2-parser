@@ -28,7 +28,7 @@ stripQueryString ∷ TL.Text → TL.Text
 stripQueryString = TL.intercalate "" . take 1 . TL.splitOn "?" . TL.strip
 
 collapseWhitespace ∷ T.Text → T.Text
-collapseWhitespace = gsub [re|(\s+|&nbsp;)|] (" " ∷ String)
+collapseWhitespace = gsub [re|(\s|&nbsp;)+|] (" " ∷ String)
 
 emptyVal ∷ Value → Bool
 emptyVal (Object o) = HMS.null o

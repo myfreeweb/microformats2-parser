@@ -3,8 +3,8 @@
 module Data.Microformats2.ParserSpec (spec) where
 
 import           Prelude.Compat
-import           Test.Hspec hiding (shouldBe)
-import           Test.Hspec.Expectations.Pretty (shouldBe)
+import           Test.Hspec --hiding (shouldBe)
+--import           Test.Hspec.Expectations.Pretty (shouldBe)
 import           TestCommon
 import           Network.URI (parseURI)
 import           Data.Microformats2.Parser
@@ -231,7 +231,7 @@ spec = do
     <a href="url" class=u-url>url</a>
     <span href="url" class=u-url><span class=value>/not</span>!!!<em class=value>/resolved</em></span>
     <img src="photo.webp" alt="photo of me"> <!-- implied by :only-of-type -->
-    <div class=e-content><a href="hello">Hello!</a></div>
+    <div class=e-content><p><a href="/hello">Hello!</a></p></div>
   </div>
 </html>|] `shouldBe` [json|{
     "items": [
@@ -241,7 +241,7 @@ spec = do
                 "photo": [ "http://com.example/base/photo.webp" ],
                 "url": [ "http://com.example/base/url", "/not/resolved" ],
                 "name": [ "card" ],
-                "content": [ { "html": "<a href=\"http://com.example/base/hello\">Hello!</a>", "value": "Hello!" } ]
+                "content": [ { "html": "<p><a href=\"http://com.example/hello\">Hello!</a></p>", "value": "Hello!" } ]
             }
         }
     ],
