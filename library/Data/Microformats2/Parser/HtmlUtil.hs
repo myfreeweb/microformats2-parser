@@ -16,7 +16,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import           Data.Text (Text)
 import           Data.Foldable (asum)
-import           Data.List (intersperse)
 import           Data.Maybe
 import           Text.Blaze
 import           Text.Blaze.Renderer.Text
@@ -35,17 +34,20 @@ filterChildElements ∷ (Element → Bool) → Element → Element
 filterChildElements f e = e { elementNodes = filter f' $ elementNodes e }
   where f' (NodeContent _) = True
         f' (NodeElement e') = f e'
+        f' _ = False
 
 renderInner ∷ Element → Text
 renderInner = T.concat . map renderNode . elementNodes
   where renderNode (NodeContent c) = c
         renderNode (NodeElement e) = TL.toStrict $ renderMarkup $ toMarkup e
+        renderNode _ = ""
 
 getInnerHtml ∷ Maybe URI → Element → Maybe Text
 getInnerHtml b rootEl = Just $ renderInner processedRoot
   where (NodeElement processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent $ collapseWhitespace c
         processNode (NodeElement e) = NodeElement $ processChildren processNode $ resolveHrefSrc b e
+        processNode x = x
 
 sanitizeAttrs ∷ Element → Element
 sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe modify $ M.toList $ elementAttributes e }
@@ -57,6 +59,7 @@ getInnerHtmlSanitized b rootEl = Just $ renderInner processedRoot
   where (NodeElement processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent $ collapseWhitespace c
         processNode (NodeElement e) = NodeElement $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) $ resolveHrefSrc b $ sanitizeAttrs e
+        processNode x = x
 
 getInnerTextRaw ∷ Element → Maybe Text
 getInnerTextRaw rootEl = unless' (txt == Just "") txt
@@ -64,6 +67,7 @@ getInnerTextRaw rootEl = unless' (txt == Just "") txt
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent $ collapseWhitespace c
         processNode (NodeElement e) = NodeContent $ collapseWhitespace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
+        processNode x = x
 
 getInnerTextWithImgs ∷ Element → Maybe Text
 getInnerTextWithImgs rootEl = unless' (txt == Just "") txt
@@ -72,6 +76,7 @@ getInnerTextWithImgs rootEl = unless' (txt == Just "") txt
         processNode (NodeContent c) = NodeContent $ collapseWhitespace c
         processNode (NodeElement e) | nameLocalName (elementName e) == "img" = NodeContent $ fromMaybe "" $ asum [ e ^. attribute "alt", e ^. attribute "src" ]
         processNode (NodeElement e) = NodeContent $ collapseWhitespace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
+        processNode x = x
 
 data HtmlContentMode = Unsafe | Escape | Sanitize
   deriving (Show, Eq)
