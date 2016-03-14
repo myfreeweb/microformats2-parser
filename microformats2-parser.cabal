@@ -1,5 +1,5 @@
 name:            microformats2-parser
-version:         1.0.1.3
+version:         1.0.1.4
 synopsis:        A Microformats 2 parser.
 category:        Web
 homepage:        https://github.com/myfreeweb/microformats2-parser
@@ -13,7 +13,7 @@ cabal-version:   >= 1.10
 extra-source-files:
     README.md
 tested-with:
-    GHC == 7.10.2
+    GHC == 7.10.3
 
 source-repository head
     type: git
