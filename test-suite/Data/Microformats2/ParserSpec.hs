@@ -17,7 +17,7 @@ spec = do
     it "parses items" $ do
       parseMf2' [xml|<body>
   <div class="h-something aaa h-something-else">
-    <h1 class="someclass p-name eeee">Name</h1>
+    <h1 class="someclass p-name eeee">Name <script>xxx</script></h1>
     <header><A class="p-name u-url" href="http://main.url">other name</a></header>
     <span class="aaaaaap-nothingaaaa">---</span>
     <div class="e-content">Some <abbr>XSS</abbr><script>alert('pwned')</script></div>
@@ -90,7 +90,22 @@ spec = do
     ],
     "rels": {},
     "rel-urls": {}
+}|]
 
+    it "does not allow html in text nodes" $ do
+      -- there was a bug where &lt;script&gt; would become <script> in content[value], name, etc.
+      parseMf2' [xml|<body class=h-entry><div class=e-content>hello <b>&#039;<script></script>&lt;script&gt;&lt;/script&gt;&#039;</div>|] `shouldBe` [json|{
+    "items": [
+        {
+            "type": [ "h-entry" ],
+            "properties": {
+                "content": [ { "value": "hello '&lt;script&gt;&lt;/script&gt;'", "html": "hello <b>&#39;&amp;lt;script&amp;gt;&amp;lt;/script&amp;gt;&#39;</b>" } ],
+                "name": [ "hello '&lt;script&gt;&lt;/script&gt;'" ]
+            }
+        }
+    ],
+    "rels": {},
+    "rel-urls": {}
 }|]
 
     it "inserts value and html into e-* h-* properties" $ do

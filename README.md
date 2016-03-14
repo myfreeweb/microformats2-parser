@@ -54,9 +54,9 @@ Use ghci to run tests quickly with `:test` (see the `.ghci` file).
 ```bash
 $ stack build
 
-$ stack test && rm tests.tix
+$ stack test
 
-$ stack ghci --ghc-options="-fno-hpc"
+$ stack ghci
 ```
 
 [stack]: https://github.com/commercialhaskell/stack

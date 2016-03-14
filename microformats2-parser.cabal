@@ -97,7 +97,7 @@ test-suite tests
       , html-conduit
       , xml-lens
     default-language: Haskell2010
-    ghc-options: -threaded -Wall -fhpc
+    ghc-options: -threaded -Wall
     hs-source-dirs: test-suite
     main-is: Spec.hs
     other-modules:

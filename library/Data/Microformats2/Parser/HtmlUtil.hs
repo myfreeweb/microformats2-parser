@@ -57,7 +57,7 @@ sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe m
 getInnerHtmlSanitized ∷ Maybe URI → Element → Maybe Text
 getInnerHtmlSanitized b rootEl = Just $ renderInner processedRoot
   where (NodeElement processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ collapseWhitespace c
+        processNode (NodeContent c) = NodeContent $ collapseWhitespace $ escapeHtml c
         processNode (NodeElement e) = NodeElement $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) $ resolveHrefSrc b $ sanitizeAttrs e
         processNode x = x
 
@@ -65,7 +65,7 @@ getInnerTextRaw ∷ Element → Maybe Text
 getInnerTextRaw rootEl = unless' (txt == Just "") txt
   where txt = Just $ T.dropAround (== ' ') $ collapseWhitespace processedRoot
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ collapseWhitespace c
+        processNode (NodeContent c) = NodeContent $ collapseWhitespace $ escapeHtml c
         processNode (NodeElement e) = NodeContent $ collapseWhitespace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
         processNode x = x
 
@@ -73,7 +73,7 @@ getInnerTextWithImgs ∷ Element → Maybe Text
 getInnerTextWithImgs rootEl = unless' (txt == Just "") txt
   where txt = Just $ T.dropAround (== ' ') $ collapseWhitespace processedRoot
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ collapseWhitespace c
+        processNode (NodeContent c) = NodeContent $ collapseWhitespace $ escapeHtml c
         processNode (NodeElement e) | nameLocalName (elementName e) == "img" = NodeContent $ fromMaybe "" $ asum [ e ^. attribute "alt", e ^. attribute "src" ]
         processNode (NodeElement e) = NodeContent $ collapseWhitespace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
         processNode x = x
@@ -83,10 +83,13 @@ data HtmlContentMode = Unsafe | Escape | Sanitize
 
 getProcessedInnerHtml ∷ HtmlContentMode → Maybe URI → Element → Maybe Text
 getProcessedInnerHtml Unsafe   b e = getInnerHtml b e
-getProcessedInnerHtml Escape   b e = (T.replace "<" "&lt;" . T.replace ">" "&gt;" . T.replace "&" "&amp;") <$> getInnerHtml b e
+getProcessedInnerHtml Escape   b e = escapeHtml <$> getInnerHtml b e
 getProcessedInnerHtml Sanitize b e = getInnerHtmlSanitized b e
 
 deduplicateElements ∷ [Element] → [Element]
 deduplicateElements es = filter (not . isNested) es
   where isNested e = any (\e' → e `elem` filter (/= e') (e' ^.. entire)) es
         -- not the fastest function I guess...
+
+escapeHtml ∷ Text → Text
+escapeHtml = T.replace "<" "&lt;" . T.replace ">" "&gt;" . T.replace "&" "&amp;"

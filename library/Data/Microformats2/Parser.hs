@@ -52,7 +52,8 @@ extractProperty s "u"  e = fromMaybe Null $ String <$> case extractU e of
                                                          Just (t, False) → Just t
                                                          Nothing → Nothing
 extractProperty _ "dt" e = fromMaybe Null $ String <$> extractDt e
-extractProperty s "e"  e = object [ "html" .= getProcessedInnerHtml (htmlMode s) (baseUri s) e, "value" .= getInnerTextRaw e ]
+extractProperty s "e"  e = object [ "html" .= getProcessedInnerHtml (htmlMode s) (baseUri s) e
+                                  , "value" .= getInnerTextRaw e ]
 extractProperty _ _    _ = Null
 
 -- lens-aeson's 'key' doesn't add new keys :-(
