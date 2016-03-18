@@ -141,7 +141,7 @@ spec = do
         {
             "type": [ "h-parent" ],
             "properties": {
-                "name": [ "something a b" ],
+                "name": [ "something\n                a\n                b" ],
                 "outer": [ "something", "a" ],
                 "inner": [ "some" ],
                 "prop": [ {

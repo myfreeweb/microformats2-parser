@@ -15,6 +15,7 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import           Data.Text (Text)
+import           Data.Char (isSpace)
 import           Data.Foldable (asum)
 import           Data.Maybe
 import           Text.Blaze
@@ -45,7 +46,7 @@ renderInner = T.concat . map renderNode . elementNodes
 getInnerHtml ∷ Maybe URI → Element → Maybe Text
 getInnerHtml b rootEl = Just $ renderInner processedRoot
   where (NodeElement processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ collapseWhitespace c
+        processNode (NodeContent c) = NodeContent c
         processNode (NodeElement e) = NodeElement $ processChildren processNode $ resolveHrefSrc b e
         processNode x = x
 
@@ -57,25 +58,25 @@ sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe m
 getInnerHtmlSanitized ∷ Maybe URI → Element → Maybe Text
 getInnerHtmlSanitized b rootEl = Just $ renderInner processedRoot
   where (NodeElement processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ collapseWhitespace $ escapeHtml c
+        processNode (NodeContent c) = NodeContent $ escapeHtml c
         processNode (NodeElement e) = NodeElement $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) $ resolveHrefSrc b $ sanitizeAttrs e
         processNode x = x
 
 getInnerTextRaw ∷ Element → Maybe Text
 getInnerTextRaw rootEl = unless' (txt == Just "") txt
-  where txt = Just $ T.dropAround (== ' ') $ collapseWhitespace processedRoot
+  where txt = Just $ T.dropAround isSpace $ processedRoot
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ collapseWhitespace $ escapeHtml c
-        processNode (NodeElement e) = NodeContent $ collapseWhitespace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
+        processNode (NodeContent c) = NodeContent $ escapeHtml c
+        processNode (NodeElement e) = NodeContent $ T.dropAround isSpace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
         processNode x = x
 
 getInnerTextWithImgs ∷ Element → Maybe Text
 getInnerTextWithImgs rootEl = unless' (txt == Just "") txt
-  where txt = Just $ T.dropAround (== ' ') $ collapseWhitespace processedRoot
+  where txt = Just $ T.dropAround isSpace $ processedRoot
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ collapseWhitespace $ escapeHtml c
+        processNode (NodeContent c) = NodeContent $ escapeHtml c
         processNode (NodeElement e) | nameLocalName (elementName e) == "img" = NodeContent $ fromMaybe "" $ asum [ e ^. attribute "alt", e ^. attribute "src" ]
-        processNode (NodeElement e) = NodeContent $ collapseWhitespace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
+        processNode (NodeElement e) = NodeContent $ T.dropAround isSpace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
         processNode x = x
 
 data HtmlContentMode = Unsafe | Escape | Sanitize

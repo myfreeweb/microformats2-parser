@@ -13,7 +13,7 @@ spec = do
     it "returns textContent without handling imgs" $ do
       let txtraw = getInnerTextRaw . documentRoot . parseLBS
       txtraw [xml|<div>This is <a href="">text content</a> <img src="/yo" alt="NOPE"> without any stuff.
-  	</div>|] `shouldBe` Just "This is text content without any stuff."
+  	</div>|] `shouldBe` Just "This is text content  without any stuff."
 
   describe "getInnerTextWithImgs" $ do
     it "returns textContent with handling imgs" $ do
