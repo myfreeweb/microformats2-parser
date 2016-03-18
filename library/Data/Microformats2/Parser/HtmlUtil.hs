@@ -58,7 +58,7 @@ sanitizeAttrs e = e { elementAttributes = M.fromList $ map wrapName $ mapMaybe m
 getInnerHtmlSanitized ∷ Maybe URI → Element → Maybe Text
 getInnerHtmlSanitized b rootEl = Just $ renderInner processedRoot
   where (NodeElement processedRoot) = processNode (NodeElement rootEl)
-        processNode (NodeContent c) = NodeContent $ escapeHtml c
+        processNode (NodeContent c) = NodeContent c
         processNode (NodeElement e) = NodeElement $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) $ resolveHrefSrc b $ sanitizeAttrs e
         processNode x = x
 

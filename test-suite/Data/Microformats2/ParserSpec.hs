@@ -99,7 +99,7 @@ spec = do
         {
             "type": [ "h-entry" ],
             "properties": {
-                "content": [ { "value": "hello '&lt;script&gt;&lt;/script&gt;'", "html": "hello <b>&#39;&amp;lt;script&amp;gt;&amp;lt;/script&amp;gt;&#39;</b>" } ],
+                "content": [ { "value": "hello '&lt;script&gt;&lt;/script&gt;'", "html": "hello <b>&#39;&lt;script&gt;&lt;/script&gt;&#39;</b>" } ],
                 "name": [ "hello '&lt;script&gt;&lt;/script&gt;'" ]
             }
         }
