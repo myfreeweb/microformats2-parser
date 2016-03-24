@@ -93,7 +93,7 @@ extractP e =
 
 extractU ∷ Element
          → Maybe (Text, Bool) -- ^ The Microformats 2 spec requires URL resolution only in some cases. The Bool here is whether you should resolve the result.
-extractU e =
+extractU e = fmap (& _1 %~ unescapeHtml) $
   asum $ [ (, True) <$> getAAreaHref e
          , (, True) <$> getImgAudioVideoSourceSrc e
          , (, True) <$> getObjectData e

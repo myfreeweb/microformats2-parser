@@ -8,19 +8,25 @@ module Data.Microformats2.Parser.HtmlUtil (
 , getInnerTextWithImgs
 , getProcessedInnerHtml
 , deduplicateElements
+, unescapeHtml
 ) where
 
 import           Prelude.Compat
+import           Control.Applicative ((<|>))
+import           Control.Error.Util (hush)
+import           Data.Monoid.Compat
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import           Data.Text (Text)
 import           Data.Char (isSpace)
 import           Data.Foldable (asum)
+import           Data.Attoparsec.Text
 import           Data.Maybe
 import           Text.Blaze
 import           Text.Blaze.Renderer.Text
 import           Text.HTML.SanitizeXSS
+import           Text.HTML.TagSoup.Entity
 import           Text.XML.Lens hiding (re)
 import           Network.URI
 import           Data.Microformats2.Parser.Util
@@ -94,3 +100,12 @@ deduplicateElements es = filter (not . isNested) es
 
 escapeHtml ∷ Text → Text
 escapeHtml = T.replace "<" "&lt;" . T.replace ">" "&gt;" . T.replace "&" "&amp;"
+
+unescapeHtml ∷ Text → Text
+unescapeHtml x = fromMaybe x $ T.concat <$> hush (parseOnly p x)
+  where p = many1 $ takeWhile1 (/= '&') <|> pent 
+        pent = do
+          char '&'
+          ent ← takeWhile1 (/= ';')
+          char ';'
+          return $ fromMaybe ("&" <> ent <> ";") $ T.pack <$> lookupEntity (T.unpack ent)

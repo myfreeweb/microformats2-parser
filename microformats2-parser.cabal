@@ -39,6 +39,7 @@ library
       , data-default
       , html-conduit
       , xml-lens
+      , tagsoup
       , network-uri
       , blaze-markup
       , xss-sanitize

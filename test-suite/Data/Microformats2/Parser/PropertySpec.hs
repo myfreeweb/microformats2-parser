@@ -42,6 +42,7 @@ spec = do
       ur [xml|<data class="u-url" value="/yo/data"/>|] `shouldBe` pure ("/yo/data", False)
       ur [xml|<input class="u-url" value="/yo/input"/>|] `shouldBe` pure ("/yo/input", False)
       ur [xml|<span class="u-url">/yo/span</span>|] `shouldBe` pure ("/yo/span", False)
+      ur [xml|<a class="u-url" href="https://secure.gravatar.com/avatar/947b5f3f323da0ef785b6f02d9c265d6?s=96&#038;d=blank&#038;r=g">link</a>|] `shouldBe` pure ("https://secure.gravatar.com/avatar/947b5f3f323da0ef785b6f02d9c265d6?s=96&d=blank&r=g", True)
 
     it "parses dt- properties" $ do
       let dt = extractDt . documentRoot . parseLBS
