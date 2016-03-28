@@ -3,8 +3,8 @@
 module Data.Microformats2.ParserSpec (spec) where
 
 import           Prelude.Compat
-import           Test.Hspec --hiding (shouldBe)
---import           Test.Hspec.Expectations.Pretty (shouldBe)
+import           Test.Hspec hiding (shouldBe)
+import           Test.Hspec.Expectations.Pretty (shouldBe)
 import           TestCommon
 import           Network.URI (parseURI)
 import           Data.Microformats2.Parser
