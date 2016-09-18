@@ -18,8 +18,8 @@ import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Middleware.Autohead
 import qualified Network.Socket as S
 import           Network.URI (parseURI)
-import           Web.Scotty
-import           Text.Blaze.Html5 as H hiding (main, param, object)
+import           Web.Scotty hiding (html)
+import           Text.Blaze.Html5 as H hiding (main, param, object, base)
 import           Text.Blaze.Html5.Attributes as A
 import           Text.Blaze.Html.Renderer.Utf8 (renderHtml)
 import qualified Options as O
@@ -82,17 +82,17 @@ app = scottyApp $ do
     json $ object []
 
   post "/parse.json" $ do
-    html ← param "html"
+    hsrc ← param "html"
     base ← param "base" `rescue` (\_ → return "")
     setHeader "Content-Type" "application/json; charset=utf-8"
     setHeader "Access-Control-Allow-Origin" "*"
-    let root = documentRoot $ parseLBS html
+    let root = documentRoot $ parseLBS hsrc
     raw $ encodePretty $ parseMf2 (def { baseUri = parseURI base }) root
 
 main = O.runCommand $ \opts args → do
   let warpSettings = setPort (port opts) defaultSettings
   case protocol opts of
     "http" → app >>= runSettings warpSettings
-    "unix" → bracket (bindPath $ socket opts) S.close (\socket → app >>= runSettingsSocket warpSettings socket)
+    "unix" → bracket (bindPath $ socket opts) S.close (\s → app >>= runSettingsSocket warpSettings s)
     "cgi" → app >>= CGI.run
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts

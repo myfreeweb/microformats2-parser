@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeFamilies #-}
+{-# LANGUAGE Safe, NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TypeFamilies #-}
 
 module Data.Microformats2.Parser.Date where
 

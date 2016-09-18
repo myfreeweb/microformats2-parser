@@ -52,6 +52,8 @@ library
         Data.Microformats2.Parser.Date
         Data.Microformats2.Parser.HtmlUtil
         Data.Microformats2.Parser.Util
+    other-modules:
+        Data.Microformats2.Parser.UnsafeUtil
     ghc-options: -Wall
     hs-source-dirs: library
 

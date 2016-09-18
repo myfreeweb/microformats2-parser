@@ -1,5 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, QuasiQuotes, UnicodeSyntax #-}
-{-# LANGUAGE CPP, RankNTypes, TupleSections #-}
+{-# LANGUAGE Safe, NoImplicitPrelude, OverloadedStrings, QuasiQuotes, UnicodeSyntax, CPP, RankNTypes, TupleSections #-}
 -- LOL: CPP is required for the \ linebreak thing
 
 module Data.Microformats2.Parser.Property where
@@ -11,7 +10,6 @@ import           Data.Char (isSpace)
 import           Data.Foldable (asum)
 import qualified Data.Map as M
 import           Data.Maybe
-import           Text.XML.Lens hiding (re)
 import           Data.Microformats2.Parser.Date (normalizeDTParts, parseDTParts)
 import           Data.Microformats2.Parser.HtmlUtil
 import           Data.Microformats2.Parser.Util

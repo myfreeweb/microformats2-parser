@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude, UnicodeSyntax, OverloadedStrings #-}
+{-# LANGUAGE Safe, NoImplicitPrelude, UnicodeSyntax, OverloadedStrings #-}
 
 module Data.Microformats2.Parser (
   Mf2ParserSettings (..)
@@ -13,18 +13,12 @@ module Data.Microformats2.Parser (
 ) where
 
 import           Prelude.Compat
-import           Text.HTML.DOM
-import           Text.XML.Lens hiding ((.=))
 import           Data.Microformats2.Parser.Property
 import           Data.Microformats2.Parser.HtmlUtil
 import           Data.Microformats2.Parser.Util
-import           Data.Default
-import           Data.Aeson
-import           Data.Aeson.Types
 import           Data.Aeson.Lens
 import           Data.Char (isSpace)
 import qualified Data.HashMap.Strict as HMS
-import qualified Data.Vector as V
 import           Data.Maybe
 import qualified Data.Text as T
 import           Network.URI
@@ -68,8 +62,7 @@ addValue _   x            _ = x
 
 addImpliedProperties ∷ Mf2ParserSettings → Element → Value → Value
 addImpliedProperties settings e v@(Object o) = Object $ addIfNull "photo" "photo" resolveURI' $ addIfNull "url" "url" resolveURI' $ addIfNull "name" "name" id o
-  where addIfNull nameJ nameH f obj = if isNothing $ v ^? key nameJ then HMS.insert nameJ (singleton $ f <$> implyProperty nameH e) obj else obj
-        singleton x = fromMaybe Null $ (Array . V.singleton . String) <$> x
+  where addIfNull nameJ nameH f obj = if isNothing $ v ^? key nameJ then HMS.insert nameJ (vsingleton $ f <$> implyProperty nameH e) obj else obj
         resolveURI' = resolveURI $ baseUri settings
 addImpliedProperties _ _ v = v
 
@@ -99,9 +92,6 @@ parseH settings e =
         properties = Object $ HMS.filter (not . emptyVal) properties'
         (Object properties') = addImpliedProperties settings e $ object $ map mergeProps $ groupBy' fst properties''
         properties'' = concatMap (parseProperty settings) $ removePropertiesOfNestedMicroformats allMf2Descendants $ filter (/= e) $ e ^.. entire . propertyElements
-        mergeProps (n, vs) = (n, Array $ V.concat $ reverse $ map (extractVector . snd) vs)
-        extractVector (Array v) = v
-        extractVector _ = V.empty
 
 -- | Parses Microformats 2 from an HTML Element into a JSON Value.
 parseMf2 ∷ Mf2ParserSettings → Element → Value

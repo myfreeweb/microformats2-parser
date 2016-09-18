@@ -1,19 +1,19 @@
-{-# LANGUAGE NoImplicitPrelude, OverloadedStrings, QuasiQuotes, UnicodeSyntax, TupleSections #-}
+{-# LANGUAGE Safe, NoImplicitPrelude, OverloadedStrings, UnicodeSyntax, TupleSections #-}
 
-module Data.Microformats2.Parser.Util where
+module Data.Microformats2.Parser.Util (
+  module Data.Microformats2.Parser.Util
+, module Data.Microformats2.Parser.UnsafeUtil
+) where
 
 import           Prelude.Compat
-import           Data.Aeson
 import           Data.Maybe
 import           Data.List (isPrefixOf)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import qualified Data.HashMap.Strict as HMS
 import qualified Data.Map as M
-import qualified Data.Vector as V
 import qualified Data.Foldable as F
 import           Network.URI
-import           Text.Regex.PCRE.Heavy
+import           Data.Microformats2.Parser.UnsafeUtil
 
 if' ∷ Bool → Maybe a → Maybe a
 if' c x = if c then x else Nothing
@@ -26,16 +26,6 @@ listToMaybeList l = unless' (null l) $ Just l
 
 stripQueryString ∷ TL.Text → TL.Text
 stripQueryString = TL.intercalate "" . take 1 . TL.splitOn "?" . TL.strip
-
-collapseWhitespace ∷ T.Text → T.Text
-collapseWhitespace = gsub [re|(\s|&nbsp;)+|] (" " ∷ String)
-
-emptyVal ∷ Value → Bool
-emptyVal (Object o) = HMS.null o
-emptyVal (Array v) = V.null v
-emptyVal (String s) = T.null s
-emptyVal Null = True
-emptyVal _ = False
 
 groupBy' ∷ (Ord β) ⇒ (α → β) → [α] → [(β, [α])]
 groupBy' f = M.toAscList . M.fromListWith (++) . map (\a → (f a, [a]))
