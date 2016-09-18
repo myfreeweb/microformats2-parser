@@ -60,7 +60,7 @@ getInnerHtmlSanitized b rootEl = Just $ renderInner processedRoot
 
 getInnerTextRaw ∷ Element → Maybe Text
 getInnerTextRaw rootEl = unless' (txt == Just "") txt
-  where txt = Just $ T.dropAround isSpace $ processedRoot
+  where txt = Just $ T.dropAround isSpace processedRoot
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent $ escapeHtml c
         processNode (NodeElement e) = NodeContent $ T.dropAround isSpace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
@@ -68,7 +68,7 @@ getInnerTextRaw rootEl = unless' (txt == Just "") txt
 
 getInnerTextWithImgs ∷ Element → Maybe Text
 getInnerTextWithImgs rootEl = unless' (txt == Just "") txt
-  where txt = Just $ T.dropAround isSpace $ processedRoot
+  where txt = Just $ T.dropAround isSpace processedRoot
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent $ escapeHtml c
         processNode (NodeElement e) | nameLocalName (elementName e) == "img" = NodeContent $ fromMaybe "" $ asum [ e ^. attribute "alt", e ^. attribute "src" ]

@@ -5,7 +5,6 @@ module Data.Microformats2.Parser.Date where
 
 import           Prelude.Compat
 import           Control.Applicative
-import           Control.Monad
 import           Control.Error.Util (hush)
 import           Text.Printf
 import           Data.Maybe
@@ -91,7 +90,7 @@ parseTime = do
   hrs  ← read <$> count 2 digit
   mins ← option 0 $ char ':' >> read <$> count 2 digit
   secs ← option 0 $ char ':' >> read <$> count 2 digit
-  htyp ← option TwentyFourHour $ parseHourType
+  htyp ← option TwentyFourHour parseHourType
   let hrs' = case (hrs, htyp) of
                (12, AMHour) → 00
                (x,  PMHour) | x < 12 → x + 12
@@ -127,12 +126,12 @@ parseDateTimeZone = do
 
 parseDTPart ∷ Parser DTPart
 parseDTPart =
-      (liftM DateTimeZonePart parseDateTimeZone)
-  <|> (liftM DateTimePart parseDateTime)
-  <|> (liftM DatePart parseDate)
-  <|> (liftM TimeZonePart parseTimeZone)
-  <|> (liftM TimePart parseTime)
-  <|> (liftM ZonePart parseZone)
+      (DateTimeZonePart <$> parseDateTimeZone)
+  <|> (DateTimePart <$> parseDateTime)
+  <|> (DatePart <$> parseDate)
+  <|> (TimeZonePart <$> parseTimeZone)
+  <|> (TimePart <$> parseTime)
+  <|> (ZonePart <$> parseZone)
 
 parseDTParts ∷ (Traversable φ, Monoid (φ DTPart)) ⇒ φ T.Text → φ DTPart
 parseDTParts = fromMaybe mempty . sequence . fmap (hush . parseOnly parseDTPart)
