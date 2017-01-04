@@ -64,6 +64,9 @@ executable microformats2-parser
       , base-compat >= 0.8.0
       , options
       , warp
+      , socket-activation
+      , stm
+      , unix
       , wai-extra
       , network
       , network-uri

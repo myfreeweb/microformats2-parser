@@ -4,7 +4,11 @@
 module Main (main) where
 
 import           Prelude.Compat
+import           Control.Monad (forM, when)
+import           Control.Monad.IO.Class
 import           Control.Exception
+import           Control.Concurrent
+import           Control.Concurrent.STM
 import           Data.Microformats2.Parser
 import           Data.List
 import           Data.Maybe (fromMaybe)
@@ -17,6 +21,9 @@ import           Network.Wai.Handler.Warp
 import qualified Network.Wai.Handler.CGI as CGI
 import           Network.Wai.Middleware.Autohead
 import qualified Network.Socket as S
+import           Network.Socket.Activation
+import           System.Posix.Internals (setNonBlockingFD)
+import           System.Posix.Signals (installHandler, sigTERM, Handler(CatchOnce))
 import           Network.URI (parseURI)
 import           Web.Scotty hiding (html)
 import           Text.Blaze.Html5 as H hiding (main, param, object, base)
@@ -34,7 +41,7 @@ instance O.Options AppOptions where
   defineOptions = pure AppOptions
     <*> O.simpleOption "port"              3000                                  "The port the app should listen for connections on (for http protocol)"
     <*> O.simpleOption "socket"            "/var/run/mf2/mf2.sock"               "The UNIX domain socket the app should listen for connections on (for unix protocol)"
-    <*> O.simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, unix, cgi"
+    <*> O.simpleOption "protocol"          "http"                                "The protocol for the server. One of: http, unix, activate, cgi"
 
 exampleValue = "<body> <p class='h-adr'>   <span class='p-street-address'>17 Austerstræti</span>   <span class='p-locality'>Reykjavík</span>   <span class='p-country-name'>Iceland</span>   <span class='p-postal-code'>107</span> </p> <div class='h-card'>   <a class='p-name u-url'      href='http://blog.lizardwrangler.com/'      >Mitchell Baker</a>    (<a class='p-org h-card'        href='http://mozilla.org/'      >Mozilla Foundation</a>) </div> <article class='h-entry'>   <h1 class='p-name'>Microformats are amazing</h1>   <p>Published by <a class='p-author h-card' href='http://example.com'>W. Developer</a>      on <time class='dt-published' datetime='2013-06-13 12:00:00'>13<sup>th</sup> June 2013</time>     <p class='p-summary'>In which I extoll the virtues of using microformats.</p>     <div class='e-content'>     <p>Blah blah blah</p>   </div> </article> <span class='h-cite'>   <time class='dt-published'>YYYY-MM-DD</time>    <span class='p-author h-card'>AUTHOR</span>:    <cite><a class='u-url p-name' href='URL'>TITLE</a></cite> </span> </body>"
 
@@ -89,10 +96,31 @@ app = scottyApp $ do
     let root = documentRoot $ parseLBS hsrc
     raw $ encodePretty $ parseMf2 (def { baseUri = parseURI base }) root
 
+runActivated warpSettings app = do
+  ass ← getActivatedSockets
+  case ass of
+    Just ss → do
+      -- based on https://gist.github.com/NathanHowell/5435345
+      -- however, doesn't return 503, just shuts down when there's 0 connections
+      shutdown ← newEmptyTMVarIO
+      activeConnections ← newTVarIO (0 ∷ Int)
+      _ ← installHandler sigTERM (CatchOnce $ atomically $ putTMVar shutdown ()) Nothing
+      let set = setOnOpen  (\_ → atomically (modifyTVar' activeConnections (+1)) >> return True) $
+                setOnClose (\_ → atomically (modifyTVar' activeConnections (subtract 1)) >> return ()) warpSettings
+      _ ← forM ss $ \sock → do
+        setNonBlockingFD (S.fdSocket sock) True
+        forkIO $ runSettingsSocket set sock app
+      atomically $ do
+        takeTMVar shutdown
+        conns ← readTVar activeConnections
+        when (conns /= 0) retry
+    Nothing → putStrLn "No sockets to activate"
+
 main = O.runCommand $ \opts args → do
   let warpSettings = setPort (port opts) defaultSettings
   case protocol opts of
     "http" → app >>= runSettings warpSettings
     "unix" → bracket (bindPath $ socket opts) S.close (\s → app >>= runSettingsSocket warpSettings s)
+    "activate" → app >>= runActivated warpSettings
     "cgi" → app >>= CGI.run
     _ → putStrLn $ "Unsupported protocol: " ++ protocol opts
