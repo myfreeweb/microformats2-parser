@@ -1,11 +1,11 @@
 name:            microformats2-parser
-version:         1.0.1.6
+version:         1.0.1.7
 synopsis:        A Microformats 2 parser.
 description:     A parser for Microformats 2 (http://microformats.org/wiki/microformats2), a simple way to describe structured information in HTML.
 category:        Web
 homepage:        https://github.com/myfreeweb/microformats2-parser
 author:          Greg V
-copyright:       2015-2016 Greg V <greg@unrelenting.technology>
+copyright:       2015-2017 Greg V <greg@unrelenting.technology>
 maintainer:      greg@unrelenting.technology
 license:         PublicDomain
 license-file:    UNLICENSE
@@ -14,7 +14,7 @@ cabal-version:   >= 1.10
 extra-source-files:
     README.md
 tested-with:
-    GHC == 8.0.1
+    GHC == 8.0.2
 
 source-repository head
     type: git
