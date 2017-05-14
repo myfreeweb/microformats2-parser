@@ -20,3 +20,9 @@ spec = do
       let txtraw = getInnerTextWithImgs . documentRoot . parseLBS
       txtraw [xml|<div>This is <a href="">text content</a> <img src="/yo" alt="with an alt"> <img src="and-src">.
     </div>|] `shouldBe` Just "This is text content with an alt and-src."
+
+  describe "getInnerHtmlSanitized" $ do
+    it "doesn't eat custom properties but eats scripts" $ do
+      let geth = getInnerHtmlSanitized Nothing . documentRoot . parseLBS
+      geth [xml|<html><custom-element onload="alert(2)">memes<script>alert(1)</script></custom-element>|]
+        `shouldBe` Just "<custom-element>memes</custom-element>"

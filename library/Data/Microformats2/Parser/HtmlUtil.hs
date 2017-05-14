@@ -55,7 +55,7 @@ getInnerHtmlSanitized ∷ Maybe URI → Element → Maybe Text
 getInnerHtmlSanitized b rootEl = Just $ renderInner processedRoot
   where (NodeElement processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent c
-        processNode (NodeElement e) = NodeElement $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) $ resolveHrefSrc b $ sanitizeAttrs e
+        processNode (NodeElement e) = NodeElement $ processChildren processNode $ filterChildElements (safeTagName' . nameLocalName . elementName) $ resolveHrefSrc b $ sanitizeAttrs e
         processNode x = x
 
 getInnerTextRaw ∷ Element → Maybe Text
@@ -63,7 +63,7 @@ getInnerTextRaw rootEl = unless' (txt == Just "") txt
   where txt = Just $ T.dropAround isSpace processedRoot
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent $ escapeHtml c
-        processNode (NodeElement e) = NodeContent $ T.dropAround isSpace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
+        processNode (NodeElement e) = NodeContent $ T.dropAround isSpace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName' . nameLocalName . elementName) e
         processNode x = x
 
 getInnerTextWithImgs ∷ Element → Maybe Text
@@ -72,7 +72,7 @@ getInnerTextWithImgs rootEl = unless' (txt == Just "") txt
         (NodeContent processedRoot) = processNode (NodeElement rootEl)
         processNode (NodeContent c) = NodeContent $ escapeHtml c
         processNode (NodeElement e) | nameLocalName (elementName e) == "img" = NodeContent $ fromMaybe "" $ asum [ e ^. attribute "alt", e ^. attribute "src" ]
-        processNode (NodeElement e) = NodeContent $ T.dropAround isSpace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName . nameLocalName . elementName) e
+        processNode (NodeElement e) = NodeContent $ T.dropAround isSpace $ renderInner $ processChildren processNode $ filterChildElements (safeTagName' . nameLocalName . elementName) e
         processNode x = x
 
 data HtmlContentMode = Unsafe | Escape | Sanitize
@@ -99,3 +99,6 @@ unescapeHtml x = fromMaybe x $ T.concat <$> hush (parseOnly p x)
           ent ← takeWhile1 (/= ';')
           _ ← char ';'
           return $ fromMaybe ("&" <> ent <> ";") $ T.pack <$> lookupEntity (T.unpack ent)
+
+safeTagName' ∷ Text → Bool
+safeTagName' x = safeTagName x || "-" `T.isInfixOf` x
