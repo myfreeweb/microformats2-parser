@@ -1,5 +1,5 @@
 name:            microformats2-parser
-version:         1.0.1.7
+version:         1.0.1.8
 synopsis:        A Microformats 2 parser.
 description:     A parser for Microformats 2 (http://microformats.org/wiki/microformats2), a simple way to describe structured information in HTML.
 category:        Web
