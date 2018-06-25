@@ -2,6 +2,4 @@ flags:
   wai-cli: { tls: false }
 packages:
   - '.'
-extra-deps:
-  - wai-cli-0.1.0
-resolver: lts-8.13
+resolver: nightly-2018-06-25
