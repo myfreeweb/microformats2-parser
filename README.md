@@ -12,6 +12,7 @@ Originally created for [sweetroll].
 - resolves relative URLs (with support for the `<base>` tag), including inside of `html` for `e-*` properties
 - parses the [value-class-pattern](http://microformats.org/wiki/value-class-pattern), including date and time normalization
 - handles malformed HTML (the actual HTML parser is [tagstream-conduit])
+- also can convert to [JF2]
 - high performance
 - extensively tested
 
@@ -21,6 +22,7 @@ Also check out [http-link-header] because you often need to read links from the 
 [#IndieWeb]: http://indiewebcamp.com
 [sweetroll]: https://github.com/myfreeweb/sweetroll
 [tagstream-conduit]: https://hackage.haskell.org/package/tagstream-conduit
+[JF2]: https://www.w3.org/TR/jf2/
 [http-link-header]: https://github.com/myfreeweb/http-link-header
 
 ## [DEMO PAGE](https://unrelenting.technology/mf2/)

@@ -2,4 +2,4 @@ flags:
   wai-cli: { tls: false }
 packages:
   - '.'
-resolver: nightly-2018-06-25
+resolver: nightly-2018-07-09
