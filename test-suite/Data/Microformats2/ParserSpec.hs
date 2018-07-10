@@ -77,13 +77,11 @@ spec = do
                     "type": [ "h-area" ],
                     "properties": {},
                     "shape": "circle",
-                    "coords": "200,250,25",
-                    "value": null
+                    "coords": "200,250,25"
                 },
                 {
                     "type": [ "h-area" ],
-                    "properties": {},
-                    "value": null
+                    "properties": {}
                 }
             ]
         }
@@ -99,8 +97,7 @@ spec = do
         {
             "type": [ "h-entry" ],
             "properties": {
-                "content": [ { "value": "hello '&lt;script&gt;&lt;/script&gt;'", "html": "hello <b>&#39;&lt;script&gt;&lt;/script&gt;&#39;</b>" } ],
-                "name": [ "hello '&lt;script&gt;&lt;/script&gt;'" ]
+                "content": [ { "value": "hello '&lt;script&gt;&lt;/script&gt;'", "html": "hello <b>&#39;&lt;script&gt;&lt;/script&gt;&#39;</b>" } ]
             }
         }
     ],
@@ -114,7 +111,6 @@ spec = do
         {
             "type": [ "h-parent" ],
             "properties": {
-                "name": [ "some html and props" ],
                 "prop": [
                     {
                         "type": [ "h-child" ],
@@ -141,13 +137,11 @@ spec = do
         {
             "type": [ "h-parent" ],
             "properties": {
-                "name": [ "something\n                a\n                b" ],
                 "outer": [ "something", "a" ],
                 "inner": [ "some" ],
                 "prop": [ {
                     "type": [ "h-child" ],
                     "properties": {
-                        "name": [ "a" ],
                         "aaa": [ "a" ]
                     },
                     "value": "a"
@@ -156,10 +150,8 @@ spec = do
             "children": [ {
                 "type": [ "h-child" ],
                 "properties": {
-                    "name": [ "b" ],
                     "bbb": [ "b" ]
-                },
-                "value": "b"
+                }
             } ]
         }
     ],

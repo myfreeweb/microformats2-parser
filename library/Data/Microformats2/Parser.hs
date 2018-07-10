@@ -54,15 +54,19 @@ extractProperty _ _    _ = Null
 -- lens-aeson's 'key' doesn't add new keys :-(
 
 addValue ∷ T.Text → Value → Value → Value
-addValue "p" v@(Object o) f = Object $ HMS.insert "value" (fromMaybe f $ v ^? key "properties" . key "name" . nth 0) o
+addValue "p" v@(Object o) f = let v' = (fromMaybe f $ v ^? key "properties" . key "name" . nth 0) in Object $ if v' == Null then o else HMS.insert "value" v' o
 addValue "e" (Object o)   f = Object $ HMS.insert "value" (fromMaybe Null $ f ^? key "value") $ HMS.insert "html" (fromMaybe Null $ f ^? key "html") o
 addValue "u" v@(Object o) f = Object $ HMS.insert "value" (fromMaybe f $ v ^? key "properties" . key "url" . nth 0) o
 addValue _   (Object o)   f = Object $ HMS.insert "value" f o
 addValue _   x            _ = x
 
 addImpliedProperties ∷ Mf2ParserSettings → Element → Value → Value
-addImpliedProperties settings e v@(Object o) = Object $ addIfNull "photo" "photo" resolveURI' $ addIfNull "url" "url" resolveURI' $ addIfNull "name" "name" id o
+addImpliedProperties settings e v@(Object o) = Object $ addIfNull "photo" "photo" resolveURI' $ addIfNull "url" "url" resolveURI' $ addIfNullAndNoOthers "name" "name" id o
   where addIfNull nameJ nameH f obj = if isNothing $ v ^? key nameJ then HMS.insert nameJ (vsingleton $ f <$> implyProperty nameH e) obj else obj
+        addIfNullAndNoOthers nameJ nameH f obj =
+          if isNothing (v ^? key nameJ) && isNothing (v ^? key "children") && isNothing (e ^? plate . entire . peElements)
+             then HMS.insert nameJ (vsingleton $ f <$> implyProperty nameH e) obj else obj
+        peElements = attributeSatisfies "class" $ any (\x → isPClass x || isEClass x) . T.split isSpace
         resolveURI' = resolveURI $ baseUri settings
 addImpliedProperties _ _ v = v
 
